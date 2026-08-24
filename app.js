@@ -44,15 +44,28 @@ function store(k, v) {
 
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[<>&"]/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;' }[c]));
-const slug = n => String(n).trim().toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 const inits = n => String(n).trim().split(/\s+/).slice(0, 2).map(w => w[0] || '').join('').toUpperCase();
 
-function avatar(name, cls = '') {
-  const s = slug(name);
-  return s
-    ? `<img class="avatar ${cls}" loading="lazy" alt="" src="assets/members/${s}.jpg"
-         onerror="this.outerHTML='<div class=&quot;avatar initials ${cls}&quot;>${esc(inits(name))}</div>'">`
-    : `<div class="avatar initials ${cls}">${esc(inits(name))}</div>`;
+// A Google Drive share link is not an image URL — pasting one into an <img> serves
+// a viewer page, not a photo. So pull the file id out and point at lh3, which is
+// where Drive actually stores the bytes. Going via drive.google.com/thumbnail
+// instead works from curl but 302s to lh3 and gets 429 rate-limited in a browser.
+// Anything else is passed through, covering a direct .jpg/.png link from anywhere.
+function photoUrl(v) {
+  const s = String(v ?? '').trim();
+  if (!s) return '';
+  const m = /drive\.google\.com\/(?:file\/d\/|open\?id=|uc\?(?:export=\w+&)?id=|thumbnail\?id=)([\w-]{20,})/.exec(s)
+    || /^([\w-]{25,})$/.exec(s);
+  return m ? `https://lh3.googleusercontent.com/d/${m[1]}=w600` : s;
+}
+
+function avatar(name, photo, cls = '') {
+  const src = photoUrl(photo);
+  const fallback = `<div class="avatar initials ${cls}">${esc(inits(name))}</div>`;
+  return src
+    ? `<img class="avatar ${cls}" loading="lazy" alt="" src="${esc(src)}"
+         onerror="this.outerHTML='${fallback.replace(/"/g, '&quot;')}'">`
+    : fallback;
 }
 
 // Date cells come back as "Date(2003,2,12)" with a ZERO-indexed month — read it
@@ -77,7 +90,7 @@ async function members() {
   catch { return fail(box, '载入不到成员名单 — check your connection'); }
 
   const card = m => `<div class="card m-card">
-      ${avatar(m.name)}
+      ${avatar(m.name, m.photos || m.photo)}
       <div class="name">${esc(m.name)}</div>
       <div class="meta">${esc(m.hall || '')}</div>
       <div style="margin:6px 0 4px"><span class="badge">${esc(m.mbti || '—')}</span></div>
@@ -112,14 +125,25 @@ async function board(tab, el) {
   try { const r = await sheet(tab); rows = r.rows; stale(r.stale); }
   catch { return fail(el, '载入不到 — check your connection'); }
 
-  rows = rows.filter(r => r.name).sort((a, b) => (+b.score || 0) - (+a.score || 0));
+  rows = rows.filter(r => r.name);
   if (!rows.length) return fail(el, '还没有分数 — nobody on the board yet');
 
-  el.innerHTML = '<ol>' + rows.map((r, i) => `<li class="${i < 3 ? 'top' : ''}">
-      <span class="rank">${i < 3 ? ['🥇', '🥈', '🥉'][i] : i + 1}</span>
+  // 最UPZ is ranked by hand (a Rank column, 1 = best); Pokémon GO is scored
+  // (highest wins). One board type each, decided by which column the tab has.
+  const ranked = rows.some(r => r.rank !== undefined && r.rank !== '');
+  rows.sort(ranked
+    ? (a, b) => (+a.rank || 1e9) - (+b.rank || 1e9)
+    : (a, b) => (+b.score || 0) - (+a.score || 0));
+
+  const medal = ['🥇', '🥈', '🥉'];
+  el.innerHTML = '<ol>' + rows.map((r, i) => {
+    const pos = ranked ? (+r.rank || i + 1) : i + 1;
+    return `<li class="${pos <= 3 ? 'top' : ''}">
+      <span class="rank">${pos <= 3 ? medal[pos - 1] : pos}</span>
       <span class="who">${esc(r.name)}${r.note ? `<span class="note">${esc(r.note)}</span>` : ''}</span>
-      <span class="score">${esc(r.score)}</span>
-    </li>`).join('') + '</ol>';
+      ${ranked ? '' : `<span class="score">${esc(r.score)}</span>`}
+    </li>`;
+  }).join('') + '</ol>';
 }
 
 // ── attendance ────────────────────────────────────────────────────────────
@@ -132,7 +156,11 @@ function mark(v) {
 
 async function attendance() {
   const box = $('#attendance');
-  let rows, events;
+  let rows, events, pics = {};
+  try {
+    const m = await sheet('members');
+    m.rows.forEach(r => r.name && (pics[String(r.name).trim()] = r.photos || r.photo));
+  } catch { /* attendance still works without portraits */ }
   try {
     const r = await sheet('attendance'); stale(r.stale);
     rows = r.rows;
@@ -158,7 +186,7 @@ async function attendance() {
 
   box.innerHTML = people.map(p => `<details>
       <summary>
-        ${avatar(p.name)}
+        ${avatar(p.name, pics[String(p.name).trim()])}
         <span><span class="name">${esc(p.name)}</span>
           <span class="bar"><i style="width:${p.pct}%"></i></span></span>
         <span class="pct">${p.went}/${events.length}<br><small>${p.pct}%</small></span>
