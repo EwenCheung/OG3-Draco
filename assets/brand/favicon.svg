@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" role="img" aria-label="Draco the dragon">
+  <defs>
+    <linearGradient id="dBody" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#46C190"/><stop offset="1" stop-color="#1D8460"/>
+    </linearGradient>
+    <linearGradient id="dWing" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2A8F69"/><stop offset="1" stop-color="#15654A"/>
+    </linearGradient>
+  </defs>
+
+  <g id="draco-float">
+    <!-- tail, curling out to the left -->
+    <g id="draco-tail">
+      <path d="M68 152 C36 152 30 128 46 118 C36 132 50 140 70 138 Z" fill="url(#dWing)"/>
+      <path d="M46 118 c-8-6-3-17 6-14 -6 4-6 10 0 14 Z" fill="#9BE7C6"/>
+    </g>
+
+    <!-- wings: solid little rounded wings tucked at the shoulders, so they read
+         as wings instead of thin arms poking out -->
+    <ellipse cx="58" cy="100" rx="17" ry="11" transform="rotate(-38 58 100)" fill="url(#dWing)"/>
+    <ellipse cx="142" cy="100" rx="17" ry="11" transform="rotate(38 142 100)" fill="url(#dWing)"/>
+
+    <!-- body -->
+    <ellipse cx="100" cy="122" rx="45" ry="41" fill="url(#dBody)"/>
+    <ellipse cx="100" cy="130" rx="27" ry="26" fill="#DFF6EA"/>
+    <!-- little arms -->
+    <ellipse cx="60" cy="124" rx="11" ry="9" fill="#25946C" transform="rotate(-16 60 124)"/>
+    <ellipse cx="140" cy="124" rx="11" ry="9" fill="#25946C" transform="rotate(16 140 124)"/>
+    <!-- feet -->
+    <ellipse cx="78" cy="157" rx="15" ry="10" fill="#1D8460"/>
+    <ellipse cx="122" cy="157" rx="15" ry="10" fill="#1D8460"/>
+
+    <!-- head -->
+    <circle cx="100" cy="70" r="42" fill="url(#dBody)"/>
+    <path d="M74 36 c-4-14 2-21 9-19 -3 8 0 15 6 19 Z" fill="#F7E4B6"/>
+    <path d="M126 36 c4-14-2-21-9-19 3 8 0 15-6 19 Z" fill="#F7E4B6"/>
+
+    <!-- blush sits on the pale muzzle edge, not on saturated green -->
+    <ellipse cx="100" cy="85" rx="23" ry="16" fill="#E4F7EC"/>
+    <ellipse cx="79" cy="84" rx="8.5" ry="5.5" fill="#F58A93" opacity=".8"/>
+    <ellipse cx="121" cy="84" rx="8.5" ry="5.5" fill="#F58A93" opacity=".8"/>
+    <circle cx="93" cy="81" r="2.5" fill="#13543D"/>
+    <circle cx="107" cy="81" r="2.5" fill="#13543D"/>
+    <path d="M92 90 q8 7 16 0" stroke="#13543D" stroke-width="3" fill="none" stroke-linecap="round"/>
+
+    <g id="draco-eyes">
+      <ellipse cx="82" cy="62" rx="7" ry="8.5" fill="#12332A"/>
+      <ellipse cx="118" cy="62" rx="7" ry="8.5" fill="#12332A"/>
+      <circle cx="84.5" cy="58.5" r="2.6" fill="#fff"/>
+      <circle cx="120.5" cy="58.5" r="2.6" fill="#fff"/>
+    </g>
+  </g>
+</svg>

@@ -1,0 +1,46 @@
+name: 今日精选 — daily photo pick
+
+# 00:00 Singapore/Malaysia time (UTC+8) = 16:00 UTC the day before.
+# GitHub cron is always UTC.
+on:
+  schedule:
+    - cron: "0 16 * * *"
+  workflow_dispatch:        # lets you refresh the picks by hand any time
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# never let two deploys race each other
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      # stdlib only, so there is nothing to pip install
+      - name: Pick 20 photos from the shared album
+        env:
+          ALBUM_TOKEN: ${{ secrets.ALBUM_TOKEN }}
+        run: python3 tools/sync_photos.py --random 20
+
+      - uses: actions/configure-pages@v5
+
+      # the photos ride along in the artifact and are never committed,
+      # so git history stays clean no matter how many nightly runs happen
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: .
+
+      - id: deploy
+        uses: actions/deploy-pages@v4
