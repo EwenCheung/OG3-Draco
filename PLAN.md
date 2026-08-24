@@ -23,7 +23,7 @@ The shape of it:
 
 | tab | columns |
 |---|---|
-| `members` | `name`, `hall`, `mbti`, `birthday`, `instagram` |
+| `members` | `name`, `hall`, `mbti`, `birthday`, `instagram`, `photos`, `notes` |
 | `upz` | `name`, `score`, `note` |
 | `pokemon` | `name`, `score`, `note` |
 | `attendance` | A1 blank, names down column A, event names across row 1, `1` for present |
@@ -79,6 +79,12 @@ One flat list of everyone, two view modes toggled at the top:
 - **Grid** — photo cards with name, MBTI, birthday, hall, Instagram.
 - **List** — no photos, one compact row each, same fields. Faster to scan and to find
   a specific name.
+
+A member with something in the `notes` column gets a 📝 beside the name. Tapping the
+card flips it to the note; tapping again flips it back. The note is clamped to six
+lines so a long one can't stretch the whole grid row — when it doesn't fit, a
+**查看全部 More** button opens it in full in a dialog. List view shows the same note
+clamped to two lines, tapping it opens the same dialog.
 
 Chosen view remembered in `localStorage`. Birthday renders as `12 Mar`. Instagram
 renders as `@handle` linking to `instagram.com/handle` in a new tab. A missing photo

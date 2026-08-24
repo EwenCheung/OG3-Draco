@@ -78,6 +78,13 @@ function birthday(v) {
   return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
 }
 
+function openNote(name, text) {
+  const d = $('#note-sheet');
+  d.querySelector('h2').textContent = name;
+  d.querySelector('p').textContent = text;
+  d.showModal();
+}
+
 function stale(on) { $('#notice')?.classList.toggle('show', !!on); }
 function fail(el, msg) { el.innerHTML = `<div class="state">${dracoSVG(84)}<p>${msg}</p></div>`; }
 function dracoSVG(px) { return `<img class="draco" src="assets/brand/dragon.svg" width="${px}" height="${px}" alt="">`; }
@@ -89,26 +96,63 @@ async function members() {
   try { const r = await sheet('members'); rows = r.rows; stale(r.stale); }
   catch { return fail(box, '载入不到成员名单 — check your connection'); }
 
-  const card = m => `<div class="card m-card">
-      ${avatar(m.name, m.photos || m.photo)}
-      <div class="name">${esc(m.name)}</div>
-      <div class="meta">${esc(m.hall || '')}</div>
-      <div style="margin:6px 0 4px"><span class="badge">${esc(m.mbti || '—')}</span></div>
-      <div class="meta">🎂 ${esc(birthday(m.birthday))}</div>
-      ${m.instagram ? `<a class="ig" target="_blank" rel="noopener"
-        href="https://instagram.com/${esc(String(m.instagram).replace(/^@/, ''))}">@${esc(String(m.instagram).replace(/^@/, ''))}</a>` : ''}
-    </div>`;
+  const note = m => String(m.notes || m.note || '').trim();
+  const ig = m => m.instagram ? `<a class="ig" target="_blank" rel="noopener"
+        href="https://instagram.com/${esc(String(m.instagram).replace(/^@/, ''))}">@${esc(String(m.instagram).replace(/^@/, ''))}</a>` : '';
+  // The back face clamps to a few lines; anything longer gets a button that
+  // reopens the whole note in a dialog, where there is room for it.
+  const moreBtn = (m, n, label) =>
+    `<button class="more-btn" data-name="${esc(m.name)}" data-note="${esc(n)}">${label}</button>`;
 
-  const row = m => `<div class="row">
-      <div class="name">${esc(m.name)} <span class="badge">${esc(m.mbti || '—')}</span></div>
-      <div class="meta">${esc(m.hall || '')} · 🎂 ${esc(birthday(m.birthday))}${m.instagram ? ' · ' : ''}${
-        m.instagram ? `<a class="ig" target="_blank" rel="noopener"
-        href="https://instagram.com/${esc(String(m.instagram).replace(/^@/, ''))}">@${esc(String(m.instagram).replace(/^@/, ''))}</a>` : ''}</div>
+  const card = m => {
+    const n = note(m);
+    return `<div class="card m-card${n ? ' flip' : ''}"${n ? ` tabindex="0" role="button" aria-label="${esc(m.name)} — 笔记 notes"` : ''}>
+      <div class="face front">
+        ${avatar(m.name, m.photos || m.photo)}
+        <div class="name">${esc(m.name)}${n ? ' 📝' : ''}</div>
+        <div class="meta">${esc(m.hall || '')}</div>
+        <div style="margin:6px 0 4px"><span class="badge">${esc(m.mbti || '—')}</span></div>
+        <div class="meta">🎂 ${esc(birthday(m.birthday))}</div>
+        ${ig(m)}
+      </div>
+      ${n ? `<div class="face back">
+        <div class="name">${esc(m.name)}</div>
+        <p class="note-text">${esc(n)}</p>
+        ${moreBtn(m, n, '查看全部 More')}
+      </div>` : ''}
     </div>`;
+  };
+
+  const row = m => {
+    const n = note(m);
+    return `<div class="row">
+      <div class="name">${esc(m.name)} <span class="badge">${esc(m.mbti || '—')}</span></div>
+      <div class="meta">${esc(m.hall || '')} · 🎂 ${esc(birthday(m.birthday))}${m.instagram ? ' · ' : ''}${ig(m)}</div>
+      ${n ? moreBtn(m, n, esc(n)) : ''}
+    </div>`;
+  };
+
+  // One delegated handler: the More button opens the dialog, anything else on a
+  // card flips it. Links keep their own behaviour.
+  box.onclick = e => {
+    const more = e.target.closest('.more-btn');
+    if (more) return openNote(more.dataset.name, more.dataset.note);
+    if (e.target.closest('a')) return;
+    e.target.closest('.flip')?.classList.toggle('flipped');
+  };
+  box.onkeydown = e => {
+    if (e.key !== 'Enter' && e.key !== ' ') return;
+    const c = e.target.closest('.flip');
+    if (c && c === e.target) { e.preventDefault(); c.classList.toggle('flipped'); }
+  };
 
   const draw = v => {
     box.className = v === 'list' ? 'card list' : 'grid';
     box.innerHTML = rows.map(v === 'list' ? row : card).join('');
+    // The clamp is CSS, so only the browser knows whether it actually bit —
+    // ask it, and hide the "More" button on notes that already fit.
+    box.querySelectorAll('.face.back .note-text').forEach(p =>
+      p.nextElementSibling.hidden = p.scrollHeight <= p.clientHeight + 1);
     document.querySelectorAll('.viewswitch button').forEach(b =>
       b.setAttribute('aria-pressed', String(b.dataset.view === v)));
     store('og3:view', v);
@@ -252,6 +296,7 @@ function install() {
   btn.hidden = !(ios && !standalone);
   btn.onclick = () => prompt ? prompt.prompt() : $('#install-sheet').showModal();
   $('#install-close')?.addEventListener('click', () => $('#install-sheet').close());
+  $('#note-close')?.addEventListener('click', () => $('#note-sheet').close());
 
   $('#share').onclick = async () => {
     const data = { title: 'OG3 Draco', url: location.origin + location.pathname };

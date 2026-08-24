@@ -154,6 +154,26 @@ main { max-width: 1040px; margin: 0 auto; padding: 6px clamp(14px, 4vw, 24px) 28
 .ig { font-size: .8rem; text-decoration: none; }
 .ig:hover { text-decoration: underline; }
 
+/* flip card: both faces share one grid cell, so the card is as tall as the
+   taller face and nothing needs absolute positioning. */
+.m-card.flip { display: grid; perspective: 900px; cursor: pointer; }
+.m-card.flip:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+.m-card .face { grid-area: 1/1; backface-visibility: hidden; transition: transform .5s; }
+.m-card.flipped .front { transform: rotateY(180deg); }
+.m-card .back { transform: rotateY(-180deg); display: flex; flex-direction: column; gap: 6px; justify-content: center; }
+.m-card.flipped .back { transform: rotateY(0); }
+@media (prefers-reduced-motion: reduce) { .m-card .face { transition: none; } }
+
+.note-text {
+  margin: 0; color: var(--muted); font-size: .8rem; line-height: 1.5; text-align: left;
+  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 6; overflow: hidden;
+}
+.more-btn {
+  border: 0; background: none; padding: 0; cursor: pointer; font: inherit;
+  font-size: .78rem; color: var(--primary); text-align: left;
+}
+.more-btn:hover { text-decoration: underline; }
+
 /* list view */
 .list { display: flex; flex-direction: column; }
 .list .row {
@@ -163,6 +183,11 @@ main { max-width: 1040px; margin: 0 auto; padding: 6px clamp(14px, 4vw, 24px) 28
 .list .row:last-child { border-bottom: 0; }
 .list .name { font-weight: 600; }
 .list .meta { color: var(--muted); font-size: .82rem; grid-column: 1; }
+.list .more-btn {
+  grid-column: 1 / -1; color: var(--muted); font-size: .8rem;
+  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden;
+}
+.list .more-btn:hover { color: var(--primary); text-decoration: none; }
 
 /* ---------- leaderboards ---------- */
 .boards {
@@ -235,6 +260,11 @@ dialog::backdrop { background: rgba(8,16,13,.9); }
 #install-sheet { width: min(420px, 92vw); height: auto; margin: auto; border-radius: 20px;
   background: var(--surface); color: var(--text); padding: 22px; }
 #install-sheet ol { padding-left: 20px; line-height: 2; }
+.note-sheet { width: min(480px, 92vw); height: fit-content; max-height: 84vh; margin: auto; overflow: auto;
+  border-radius: 20px; background: var(--surface); color: var(--text); padding: 22px; }
+.note-sheet h2 { margin: 0 0 10px; font-size: 1.15rem; }
+.note-sheet p { margin: 0 0 16px; white-space: pre-wrap; }
+.note-sheet #note-close { width: 100%; }
 
 /* ---------- mascot motion ---------- */
 #draco-float { animation: float 4.5s ease-in-out infinite; transform-origin: 100px 120px; }
