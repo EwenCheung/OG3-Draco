@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#0E6B4F">
+<title>今日精选 Top Picks · OG3 Draco</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="assets/brand/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="assets/brand/apple-touch-icon.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="OG3 Draco">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="top">
+  <img class="draco" src="assets/brand/dragon.svg" alt="" width="40" height="40">
+  <h1 class="brand">OG3 <span>Draco</span></h1>
+  <div class="top-actions">
+    <button class="icon-btn" id="install" hidden title="加到主页 Add to Home Screen">＋</button>
+    <button class="icon-btn" id="share" title="分享 Share">↗</button>
+  </div>
+</header>
+
+<nav class="nav">
+    <a href="index.html"><span class="zh">成员</span><span class="en">Members</span></a>
+    <a href="leaderboard.html"><span class="zh">排行</span><span class="en">Leaderboard</span></a>
+    <a href="attendance.html"><span class="zh">出席</span><span class="en">Attendance</span></a>
+    <a href="photos.html"><span class="zh">相片</span><span class="en">Photos</span></a>
+</nav>
+
+<main>
+  <p class="notice" id="notice">⚠️ 连不上 Google Sheet — showing the last saved copy.</p>
+  <div class="page-head">
+    <h2>今日精选 Top Picks</h2><span class="sub">每天换 · 20 random memories, refreshed daily</span>
+  </div>
+  <div class="photos" id="photos"><div class="state">载入中 Loading…</div></div>
+
+  <a class="more" href="https://www.icloud.com/sharedalbum/#B2K5qXGF1r03bJO"
+     target="_blank" rel="noopener">
+    <span>看全部相册 <strong>View the full album</strong></span>
+    <span class="arrow">↗</span>
+  </a>
+  <dialog id="lightbox">
+    <div class="lb">
+      <img alt="">
+      <div class="bar2">
+        <button id="prev">‹</button><button id="play">▶</button><button id="next">›</button>
+        <button onclick="this.closest('dialog').close()">✕</button>
+      </div>
+    </div>
+  </dialog>
+</main>
+
+<dialog id="install-sheet">
+  <h2 style="margin-top:0">加到主页 Add to Home Screen</h2>
+  <p>iPhone 没有一键安装 — Apple doesn't allow it, so two taps:</p>
+  <ol>
+    <li>撳 Safari 下面嘅 <strong>分享 Share</strong> 掣 ⬆️</li>
+    <li>拣 <strong>Add to Home Screen 加到主畫面</strong></li>
+  </ol>
+  <p style="color:var(--muted);font-size:.88rem">之后就好似 app 咁 — full screen, no address bar.</p>
+  <button class="icon-btn" id="install-close" style="width:100%">好 OK</button>
+</dialog>
+
+<script src="app.js"></script>
+</body>
+</html>
