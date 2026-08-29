@@ -15,7 +15,8 @@ The shape of it:
   signed photo URLs expire in about an hour, so linking live isn't possible — we
   download once.
 - **Plain HTML/CSS/JS**, no framework, no bundler, no npm. GitHub Pages, deploy on push.
-- **Everyone is just a member.** No OGL/OGM distinction anywhere in the UI.
+- **Everyone is still a member.** Members renders each person's Role; spreadsheet
+  formulas control leaderboard eligibility and all calculated values.
 
 ## Setup — what you provide
 
@@ -23,10 +24,10 @@ The shape of it:
 
 | tab | columns |
 |---|---|
-| `members` | `name`, `hall`, `mbti`, `birthday`, `instagram`, `photos`, `notes` |
-| `upz` | `name`, `score`, `note` |
-| `pokemon` | `name`, `score`, `note` |
-| `attendance` | A1 blank, names down column A, event names across row 1, `1` for present |
+| `members` | `name`, `role`, `hall`, `mbti`, `birthday`, `instagram`, `photos`, `notes` |
+| `upz` | `rank`, `name`, `marks`, `note` (formula output already limited to OGM) |
+| `pokemon` | `rank`, `name`, `score`, `note` |
+| `attendance` | `name`, `total attendance score`, `attendance rate`, `ogl bonus`, then event columns from E onward |
 
 Share → General access → **Anyone with the link** → **Viewer**. Viewer, not Editor —
 Editor would let anyone holding the URL rewrite your data. Give edit access to specific
@@ -96,20 +97,24 @@ around as they load.
 
 ## 2. Leaderboards — `leaderboard.html`
 
-Both boards on one page, each sorted by score descending with the top three marked.
-Stacked vertically on phone, side by side from iPad up.
+Both boards show the spreadsheet's formula-provided rank, name and score. UPZ already
+contains only OGM members; Pokémon uses its own formula rank. Notes are clamped and open
+in a dialog. The UPZ winner gets fire/red treatment and the Pokémon winner gets a
+crown/gold treatment on both the leaderboard and Members page. A dual winner gets both.
+
+The boards stack vertically on phone and sit side by side from iPad up.
 
 ## 3. Attendance — `attendance.html`
 
-Tick or cross only. A Sheets **checkbox** (Insert → Checkbox) is the easiest thing to
-tap on a phone mid-event and gives `TRUE`/`FALSE`; typed `1`, `y`, `✓` or `是` also
-count as present. Anything else, including blank, counts as absent.
+Columns A–D are Name, total attendance score, attendance rate and OGL bonus. Events
+begin at column E. Both attendance score and attendance rate come directly from sheet
+formulas; the website formats them without recalculating either value.
 
-- **Easy view (default):** one row per person — photo, name, `8/10`, percentage, sorted
-  by attendance. Readable on a phone with no horizontal scrolling.
-- **Tap a person:** expands to show which specific events they made or missed.
-- **Full grid behind a toggle:** the whole members × events matrix, in its own
-  horizontally-scrolling container so the page body never scrolls sideways.
+- **Easy view (default):** one row per person — photo, name, formula attendance rate and
+  weighted total, in spreadsheet order.
+- **Tap a person:** expands to show total, rate, OGL bonus and event values.
+- **Full grid behind a toggle:** Name, total, rate, OGL bonus and every event, inside a
+  horizontally-scrolling container.
 
 Names are matched against the `members` tab for photos. Any attendance name with no
 match still appears, without a photo — silently dropping someone over a typo is exactly

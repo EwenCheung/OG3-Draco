@@ -32,7 +32,8 @@ python3 tools/sync_photos.py --random 20
 | **Photos** | A nightly Action picks 20 at random from the iCloud shared album and publishes them with the Pages deploy. They are gitignored and never committed. |
 | **Hosting** | GitHub Pages, deployed by Actions. Nothing to run, nothing to pay for. |
 
-Everyone in the sheet is just a member — there is no OGL/OGM distinction in the UI.
+The Members page renders everyone's `Role`. The spreadsheet formulas decide who appears
+on each leaderboard and calculate every rank, score and attendance rate.
 
 ## Layout
 

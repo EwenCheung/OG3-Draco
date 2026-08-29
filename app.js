@@ -7,12 +7,36 @@ const SHEET_ID = '1YLUb8mV-QYrMMCLwyEXLeYJINz9_ZIfPFW9Qq1a-dms';
 // ── sheet loading ─────────────────────────────────────────────────────────
 // gviz answers with JSON wrapped in google.visualization.Query.setResponse(...)
 // so we slice the wrapper off rather than hand-rolling a CSV parser.
+async function sheetText(url, timeoutMs) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const response = await fetch(url, { signal: controller.signal, cache: 'no-store' });
+    if (!response.ok) throw new Error(`Sheet request failed (${response.status})`);
+    return await response.text();
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 async function sheet(tab) {
   const key = 'og3:' + tab;
+  const cached = store(key);
+  const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(tab)}`;
   try {
-    const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${tab}`;
-    const txt = await (await fetch(url)).text();
-    const t = JSON.parse(txt.slice(txt.indexOf('{'), txt.lastIndexOf('}') + 1)).table;
+    let txt;
+    try {
+      txt = await sheetText(url, cached ? 5000 : 8000);
+    } catch (firstError) {
+      // Google occasionally leaves a gviz request pending. Retry once with a
+      // cache-buster; both attempts are bounded so the UI can never spin forever.
+      txt = await sheetText(`${url}&_=${Date.now()}`, cached ? 3000 : 6000);
+    }
+    const start = txt.indexOf('{');
+    const end = txt.lastIndexOf('}');
+    if (start < 0 || end < start) throw new Error('Invalid Sheet response');
+    const t = JSON.parse(txt.slice(start, end + 1)).table;
+    if (!t?.cols || !t?.rows) throw new Error('Missing Sheet table');
     const cols = t.cols.map(c => (c.label || '').trim().toLowerCase());
     const rows = t.rows.map(r => {
       const o = { _cells: [] };
@@ -28,8 +52,8 @@ async function sheet(tab) {
     store(key, rows);
     return { rows, stale: false };
   } catch (e) {
-    const cached = store(key);          // last good copy beats a blank page
-    if (cached) return { rows: cached, stale: true };
+    console.warn(`[sheet:${tab}] live data unavailable`, e);
+    if (cached) return { rows: cached, stale: true }; // last good copy beats a blank page
     throw e;
   }
 }
@@ -45,6 +69,21 @@ function store(k, v) {
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[<>&"]/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;' }[c]));
 const inits = n => String(n).trim().split(/\s+/).slice(0, 2).map(w => w[0] || '').join('').toUpperCase();
+const nameKey = n => String(n ?? '').trim().toLocaleLowerCase().replace(/\s+/g, ' ');
+const points = r => r.score ?? r.marks ?? r.points ?? r.total ?? '';
+
+// Prefer the sheet's explicit Rank column so ties remain exactly as the editor
+// intended. If a board has no Rank column, everyone tied at the highest score wins.
+function winners(rows) {
+  const valid = rows.filter(r => r.name);
+  const ranked = valid.filter(r => r.rank !== undefined && r.rank !== '');
+  if (ranked.length) {
+    const best = Math.min(...ranked.map(r => +r.rank || Infinity));
+    return new Set(ranked.filter(r => +r.rank === best).map(r => nameKey(r.name)));
+  }
+  const best = Math.max(...valid.map(r => +points(r) || 0));
+  return new Set(valid.filter(r => (+points(r) || 0) === best).map(r => nameKey(r.name)));
+}
 
 // A Google Drive share link is not an image URL — pasting one into an <img> serves
 // a viewer page, not a photo. So pull the file id out and point at lh3, which is
@@ -80,6 +119,7 @@ function birthday(v) {
 
 function openNote(name, text) {
   const d = $('#note-sheet');
+  if (!d) return;
   d.querySelector('h2').textContent = name;
   d.querySelector('p').textContent = text;
   d.showModal();
@@ -92,8 +132,17 @@ function dracoSVG(px) { return `<img class="draco" src="assets/brand/dragon.svg"
 // ── members ───────────────────────────────────────────────────────────────
 async function members() {
   const box = $('#members');
-  let rows;
-  try { const r = await sheet('members'); rows = r.rows; stale(r.stale); }
+  let rows, upzWinners = new Set(), pokemonWinners = new Set();
+  try {
+    const memberResult = await sheet('members');
+    rows = memberResult.rows;
+    stale(memberResult.stale);
+
+    // The spreadsheet formulas are authoritative for both boards. The UPZ tab
+    // already contains only OGM members, so the website does not filter it again.
+    try { upzWinners = winners((await sheet('upz')).rows); } catch { }
+    try { pokemonWinners = winners((await sheet('pokemon')).rows); } catch { }
+  }
   catch { return fail(box, '载入不到成员名单 — check your connection'); }
 
   const note = m => String(m.notes || m.note || '').trim();
@@ -104,12 +153,34 @@ async function members() {
   const moreBtn = (m, n, label) =>
     `<button class="more-btn" data-name="${esc(m.name)}" data-note="${esc(n)}">${label}</button>`;
 
+  const championDecorations = m => {
+    const key = nameKey(m.name);
+    const isUpzKing = upzWinners.has(key);
+    const isPokemonKing = pokemonWinners.has(key);
+    const champion = `${isUpzKing ? ' upz-champion' : ''}${isPokemonKing ? ' pokemon-champion' : ''}${isUpzKing && isPokemonKing ? ' dual-champion' : ''}`;
+    return {
+      champion,
+      title: `<span class="champion-name${champion}">
+      ${isUpzKing ? '<span class="champ-icon fire" title="UPZ King" aria-label="UPZ King">🔥</span>' : ''}
+      <span>${esc(m.name)}</span>
+      ${isPokemonKing ? '<span class="champ-icon crown" title="Pokémon King" aria-label="Pokémon King">👑</span>' : ''}
+    </span>`,
+      titles: isUpzKing || isPokemonKing ? `<div class="member-titles">
+      ${isUpzKing ? '<span class="member-title upz-title">🔥 UPZ King</span>' : ''}
+      ${isPokemonKing ? '<span class="member-title pokemon-title">👑 Pokémon King</span>' : ''}
+    </div>` : ''
+    };
+  };
+
   const card = m => {
     const n = note(m);
-    return `<div class="card m-card${n ? ' flip' : ''}"${n ? ` tabindex="0" role="button" aria-label="${esc(m.name)} — 笔记 notes"` : ''}>
+    const decoration = championDecorations(m);
+    return `<div class="card m-card${n ? ' flip' : ''}${decoration.champion}"${n ? ` tabindex="0" role="button" aria-label="${esc(m.name)} — 笔记 notes"` : ''}>
       <div class="face front">
         ${avatar(m.name, m.photos || m.photo)}
-        <div class="name">${esc(m.name)}${n ? ' 📝' : ''}</div>
+        <div class="name">${decoration.title}${n ? '<span class="note-mark" aria-label="Has notes">📝</span>' : ''}</div>
+        ${decoration.titles}
+        ${m.role ? `<div class="member-role">${esc(m.role)}</div>` : ''}
         <div class="meta">${esc(m.hall || '')}</div>
         <div style="margin:6px 0 4px"><span class="badge">${esc(m.mbti || '—')}</span></div>
         <div class="meta">🎂 ${esc(birthday(m.birthday))}</div>
@@ -125,8 +196,10 @@ async function members() {
 
   const row = m => {
     const n = note(m);
-    return `<div class="row">
-      <div class="name">${esc(m.name)} <span class="badge">${esc(m.mbti || '—')}</span></div>
+    const decoration = championDecorations(m);
+    return `<div class="row${decoration.champion}">
+      <div class="name">${decoration.title} ${m.role ? `<span class="badge role-badge">${esc(m.role)}</span>` : ''} <span class="badge">${esc(m.mbti || '—')}</span></div>
+      ${decoration.titles}
       <div class="meta">${esc(m.hall || '')} · 🎂 ${esc(birthday(m.birthday))}${m.instagram ? ' · ' : ''}${ig(m)}</div>
       ${n ? moreBtn(m, n, esc(n)) : ''}
     </div>`;
@@ -172,78 +245,131 @@ async function board(tab, el) {
   rows = rows.filter(r => r.name);
   if (!rows.length) return fail(el, '还没有分数 — nobody on the board yet');
 
-  // 最UPZ is ranked by hand (a Rank column, 1 = best); Pokémon GO is scored
-  // (highest wins). One board type each, decided by which column the tab has.
   const ranked = rows.some(r => r.rank !== undefined && r.rank !== '');
   rows.sort(ranked
     ? (a, b) => (+a.rank || 1e9) - (+b.rank || 1e9)
-    : (a, b) => (+b.score || 0) - (+a.score || 0));
+    : (a, b) => (+points(b) || 0) - (+points(a) || 0));
 
-  const medal = ['🥇', '🥈', '🥉'];
-  el.innerHTML = '<ol>' + rows.map((r, i) => {
+  const icon = tab === 'pokemon' ? '👑' : '🔥';
+  const kingClass = tab === 'pokemon' ? 'pokemon-leader' : 'upz-leader';
+  const kingTitle = tab === 'pokemon' ? 'Pokémon King' : 'UPZ King';
+  el.innerHTML = '<div class="board-labels"><span>Rank</span><span>Name</span><span>Score</span></div><ol>' + rows.map((r, i) => {
     const pos = ranked ? (+r.rank || i + 1) : i + 1;
-    return `<li class="${pos <= 3 ? 'top' : ''}">
-      <span class="rank">${pos <= 3 ? medal[pos - 1] : pos}</span>
-      <span class="who">${esc(r.name)}${r.note ? `<span class="note">${esc(r.note)}</span>` : ''}</span>
-      ${ranked ? '' : `<span class="score">${esc(r.score)}</span>`}
+    const note = String(r.note ?? '').trim();
+    return `<li class="${pos <= 3 ? 'top' : ''}${pos === 1 ? ` ${kingClass}` : ''}">
+      <span class="rank">#${esc(pos)}</span>
+      <span class="who">
+        <span class="leader-name">${pos === 1 && tab === 'upz' ? `<span aria-hidden="true">${icon}</span>` : ''}<span>${esc(r.name)}</span>${pos === 1 && tab === 'pokemon' ? `<span aria-hidden="true">${icon}</span>` : ''}</span>
+        ${pos === 1 ? `<span class="leader-title">${icon} ${kingTitle}</span>` : ''}
+        ${note ? `<button class="board-note" data-name="${esc(r.name)} · ${tab === 'pokemon' ? 'Pokémon GO' : '最UPZ'}" data-note="${esc(note)}" aria-label="View full note for ${esc(r.name)}"><span class="note-copy">${esc(note)}</span><b>… 查看详情</b></button>` : ''}
+      </span>
+      <span class="score"><strong>${esc(points(r))}</strong><small>pts</small></span>
     </li>`;
   }).join('') + '</ol>';
+
+  el.onclick = e => {
+    const note = e.target.closest('.board-note');
+    if (note) openNote(note.dataset.name, note.dataset.note);
+  };
 }
 
 // ── attendance ────────────────────────────────────────────────────────────
-// Tick or cross. A Sheets checkbox gives TRUE/FALSE, which is the easiest thing to
-// tap on a phone mid-event; the rest are what people type by hand instead.
-const PRESENT = ['true', '1', 'y', 'yes', '✓', '✔', '☑', '是', 'p'];
-function mark(v) {
-  return PRESENT.includes(String(v ?? '').trim().toLowerCase()) ? 'yes' : 'no';
-}
+const DEFAULT_RULES = `IMPORTANT NOTICE ‼️‼️
+- 最UPZ 排行榜 如果自己jio +3分
+- 参加OGM 的OG jio +2分
+- 参加OGL/COM 的OG jio +1分
+- 如果我没有算对你的分数，可以来PM我`;
 
 async function attendance() {
   const box = $('#attendance');
-  let rows, events, pics = {};
-  try {
-    const m = await sheet('members');
-    m.rows.forEach(r => r.name && (pics[String(r.name).trim()] = r.photos || r.photo));
-  } catch { /* attendance still works without portraits */ }
-  try {
-    const r = await sheet('attendance'); stale(r.stale);
-    rows = r.rows;
-    const labels = (rows[0]?._cols || []).slice(1);
-    if (labels.some(Boolean)) {
-      events = labels;                                   // A1 had text: real headers
-    } else {
-      events = (rows[0]?._cells || []).slice(1);         // A1 blank: row 1 is the header
-      rows = rows.slice(1);
-    }
-    events = events.map((e, i) => e || `Event ${i + 1}`);
-  } catch { return fail(box, '载入不到出席记录 — check your connection'); }
+  const rulesBox = $('#attendance-rules');
+  let rows, columns, pics = {}, upzWinners = new Set(), pokemonWinners = new Set();
+
+  const [rulesResult, membersResult, upzResult, pokemonResult, attendanceResult] = await Promise.allSettled([
+    sheet('Rules'), sheet('members'), sheet('upz'), sheet('pokemon'), sheet('attendance')
+  ]);
+
+  if (rulesResult.status === 'fulfilled') {
+    const ruleText = rulesResult.value.rows.flatMap(row => row._cells).map(String).find(Boolean);
+    rulesBox.querySelector('p').textContent = (ruleText || DEFAULT_RULES)
+      .replace(/^IMPORTANT NOTICE[^\n]*\n?/i, '').trim();
+  } else {
+    rulesBox.querySelector('p').textContent = DEFAULT_RULES
+      .replace(/^IMPORTANT NOTICE[^\n]*\n?/i, '').trim();
+  }
+
+  if (membersResult.status === 'fulfilled') membersResult.value.rows.forEach(r =>
+    r.name && (pics[String(r.name).trim()] = r.photos || r.photo));
+  if (upzResult.status === 'fulfilled') upzWinners = winners(upzResult.value.rows);
+  if (pokemonResult.status === 'fulfilled') pokemonWinners = winners(pokemonResult.value.rows);
+  if (attendanceResult.status !== 'fulfilled') return fail(box, '载入不到出席记录 — check your connection');
+
+  stale(attendanceResult.value.stale);
+  rows = attendanceResult.value.rows;
+  columns = (rows[0]?._cols || []).map((label, index) => ({ label, index })).filter(c => c.label);
 
   rows = rows.filter(r => r._cells[0]);
   if (!rows.length) return fail(box, '还没有记录 — no events logged yet');
 
+  // Spreadsheet formulas are authoritative: A name, B weighted attendance score,
+  // C attendance rate, D OGL bonus, E+ event values. The website only formats them.
+  const totalColumn = columns.find(c => c.index === 1)
+    || columns.find(c => /total.*score|score.*total/i.test(c.label));
+  const rateColumn = columns.find(c => c.index === 2)
+    || columns.find(c => /attendance.*rate/i.test(c.label));
+  const bonusColumn = columns.find(c => c.index === 3)
+    || columns.find(c => /ogl.*bonus/i.test(c.label));
+  const eventColumns = columns.filter(c => c.index >= 4);
+  const number = v => Number.isFinite(+v) ? +v : 0;
+  const rateDisplay = value => {
+    const n = number(value);
+    const pct = Math.abs(n) <= 1 ? n * 100 : n;
+    return `${new Intl.NumberFormat('en', { maximumFractionDigits: 1 }).format(pct)}%`;
+  };
   const people = rows.map(r => {
     const name = r._cells[0];
-    const marks = events.map((_, i) => mark(r._cells[i + 1]));
-    const went = marks.filter(m => m !== 'no').length;
-    return { name, marks, went, pct: events.length ? Math.round(went / events.length * 100) : 0 };
-  }).sort((a, b) => b.went - a.went);
+    const events = eventColumns.map(c => ({ label: c.label, value: number(r._cells[c.index]) }));
+    const bonus = bonusColumn ? number(r._cells[bonusColumn.index]) : 0;
+    const total = totalColumn ? number(r._cells[totalColumn.index]) : 0;
+    const rate = rateColumn ? number(r._cells[rateColumn.index]) : 0;
+    const barPct = Math.max(0, Math.min(100, Math.abs(rate) <= 1 ? rate * 100 : rate));
+    const key = nameKey(name);
+    const isUpzKing = upzWinners.has(key);
+    const isPokemonKing = pokemonWinners.has(key);
+    const champion = `${isUpzKing ? ' upz-champion' : ''}${isPokemonKing ? ' pokemon-champion' : ''}${isUpzKing && isPokemonKing ? ' dual-champion' : ''}`;
+    return { name, events, bonus, total, rate, barPct, isUpzKing, isPokemonKing, champion };
+  });
 
-  box.innerHTML = people.map(p => `<details>
+  box.innerHTML = people.map(p => `<details class="${p.champion.trim()}">
       <summary>
         ${avatar(p.name, pics[String(p.name).trim()])}
-        <span><span class="name">${esc(p.name)}</span>
-          <span class="bar"><i style="width:${p.pct}%"></i></span></span>
-        <span class="pct">${p.went}/${events.length}<br><small>${p.pct}%</small></span>
+        <span class="att-person"><span class="name"><span class="champion-name${p.champion}">
+          ${p.isUpzKing ? '<span class="champ-icon fire" aria-hidden="true">🔥</span>' : ''}
+          <span>${esc(p.name)}</span>
+          ${p.isPokemonKing ? '<span class="champ-icon crown" aria-hidden="true">👑</span>' : ''}
+        </span></span>
+          ${p.isUpzKing || p.isPokemonKing ? `<span class="att-king-titles">
+            ${p.isUpzKing ? '<span class="member-title upz-title">🔥 UPZ King</span>' : ''}
+            ${p.isPokemonKing ? '<span class="member-title pokemon-title">👑 Pokémon King</span>' : ''}
+          </span>` : ''}
+          <span class="bar"><i style="width:${p.barPct}%"></i></span></span>
+        <span class="att-rate"><strong>${rateDisplay(p.rate)}</strong><small>Attendance</small></span>
+        <span class="att-score"><strong>${esc(p.total)}</strong><small>${p.total === 1 ? 'pt' : 'pts'}</small></span>
       </summary>
-      <div class="events">${events.map((e, i) =>
-        `<span class="ev ${p.marks[i]}">${esc(e)}</span>`).join('')}</div>
+      <div class="events">
+        <span class="ev metric"><span>Total score</span><strong>${esc(p.total)}</strong></span>
+        <span class="ev metric"><span>Attendance rate</span><strong>${rateDisplay(p.rate)}</strong></span>
+        <span class="ev metric"><span>OGL bonus</span><strong>${p.bonus ? `+${esc(p.bonus)}` : '—'}</strong></span>
+        ${p.events.map(item =>
+          `<span class="ev ${item.value ? 'yes' : 'zero'}"><span>${esc(item.label)}</span><strong>${item.value ? `+${esc(item.value)}` : '—'}</strong></span>`).join('')}
+      </div>
     </details>`).join('');
 
   // full matrix lives behind the toggle, scrolling inside its own box
-  $('#matrix').innerHTML = `<table class="matrix"><thead><tr><th>成员</th>${
-    events.map(e => `<th>${esc(e)}</th>`).join('')}</tr></thead><tbody>${
-    people.map(p => `<tr><td>${esc(p.name)}</td>${
-      p.marks.map(m => `<td>${m === 'yes' ? '✅' : m === 'late' ? '🕒' : '·'}</td>`).join('')
+  $('#matrix').innerHTML = `<table class="matrix"><thead><tr><th>成员 Name</th><th>Total attendance score</th><th>Attendance rate</th><th>OGL bonus</th>${
+    eventColumns.map(c => `<th>${esc(c.label)}</th>`).join('')}</tr></thead><tbody>${
+    people.map(p => `<tr class="${p.champion.trim()}"><td>${p.isUpzKing ? '🔥 ' : ''}${esc(p.name)}${p.isPokemonKing ? ' 👑' : ''}</td><td><strong>${esc(p.total)}</strong></td><td>${rateDisplay(p.rate)}</td><td>${p.bonus || '·'}</td>${
+      p.events.map(item => `<td>${item.value ? esc(item.value) : '·'}</td>`).join('')
     }</tr>`).join('')}</tbody></table>`;
 
   $('#toggle-matrix').onclick = e => {
