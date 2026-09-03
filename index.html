@@ -1,51 +1,82 @@
 <!doctype html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow">
-<meta name="theme-color" content="#153D2E">
-<title>成员 Members · OG3 Draco</title>
+<meta name="theme-color" content="#0B3D3B">
+<title>主页 Home · OG3 Draco</title>
 <link rel="manifest" href="manifest.json">
-<link rel="icon" href="assets/brand/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="assets/brand/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="assets/brand/apple-touch-icon.png">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="OG3 Draco">
-<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&amp;display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 </head>
-<body>
+<body class="home-page">
 
 <header class="top">
-  <img class="draco" src="assets/brand/dragon.svg" alt="" width="40" height="40">
-  <h1 class="brand">OG3 <span>Draco</span></h1>
+  <a class="brand-home" href="index.html" aria-label="OG3 Draco 主页">
+    <img class="draco" src="assets/brand/icon-192.png" alt="" width="48" height="48">
+    <h1 class="brand">OG3 <span>Draco</span></h1>
+  </a>
   <div class="top-actions">
     <button class="icon-btn" id="install" type="button" hidden title="添加到主屏幕" aria-label="添加到主屏幕">＋</button>
     <button class="icon-btn" id="share" type="button" title="分享 Share" aria-label="分享 Share">↗</button>
   </div>
 </header>
 
-<nav class="nav">
-    <a href="index.html"><span class="zh">成员</span><span class="en">Members</span></a>
-    <a href="leaderboard.html"><span class="zh">排行</span><span class="en">Leaderboard</span></a>
-    <a href="attendance.html"><span class="zh">出席</span><span class="en">Attendance</span></a>
-    <a href="photos.html"><span class="zh">相片</span><span class="en">Photos</span></a>
+<nav class="nav" aria-label="主导航">
+  <a href="index.html"><span class="zh">主页</span><span class="en">Home</span></a>
+  <a href="members.html"><span class="zh">成员</span><span class="en">Members</span></a>
+  <a href="leaderboard.html"><span class="zh">排行</span><span class="en">Leaderboard</span></a>
+  <a href="attendance.html"><span class="zh">出席</span><span class="en">Attendance</span></a>
+  <a href="photos.html"><span class="zh">相片</span><span class="en">Photos</span></a>
 </nav>
 
-<main>
-  <p class="notice" id="notice">⚠️ 连不上 Google Sheet — showing the last saved copy.</p>
-  <div class="page-head">
-    <h2>成员 Members</h2>
-    <div class="viewswitch">
-      <button data-view="grid" aria-pressed="true">格 Grid</button>
-      <button data-view="list" aria-pressed="false">单 List</button>
+<main class="home-main">
+  <section class="home-hero" aria-labelledby="home-title">
+    <div class="hero-copy">
+      <p class="eyebrow">OG3</p>
+      <h2 id="home-title"><span>DRACO</span></h2>
+      <p class="hero-note">你再azi azo<br>一脚踢出ufo</p>
+      <a class="hero-cta" href="members.html">认识 Draco 成员 <span>→</span></a>
     </div>
-  </div>
-  <div id="members" class="grid"><div class="state">载入中 Loading…</div></div>
+    <div class="hero-art">
+      <div class="mascot-frame home-photo-frame">
+        <img id="home-photo" alt="Draco 照片墙随机回忆">
+      </div>
+    </div>
+  </section>
+
+  <section class="portal-section" aria-labelledby="portal-title">
+    <div class="portal-head">
+      <h2 id="portal-title">探索我们的 Draco 宇宙</h2>
+    </div>
+    <div class="portal-grid">
+      <a class="portal-card members-portal" href="members.html">
+        <span class="portal-icon">☻</span>
+        <b>成员介绍</b>
+      </a>
+      <a class="portal-card rank-portal" href="leaderboard.html">
+        <span class="portal-icon">♕</span>
+        <b>排行榜</b>
+      </a>
+      <a class="portal-card attendance-portal" href="attendance.html">
+        <span class="portal-icon">✦</span>
+        <b>出席记录</b>
+      </a>
+      <a class="portal-card photos-portal" href="photos.html">
+        <span class="portal-icon">▧</span>
+        <b>照片墙</b>
+      </a>
+    </div>
+  </section>
 </main>
 
 <dialog id="install-sheet">
@@ -57,11 +88,6 @@
   </ol>
   <p class="install-note">完成后，即可从主屏幕直接打开。</p>
   <button class="icon-btn" id="install-close" type="button">好的</button>
-</dialog>
-
-<dialog id="member-sheet" class="note-sheet member-sheet" aria-labelledby="member-detail-title">
-  <div class="member-detail"></div>
-  <button class="icon-btn" id="member-close" type="button">关闭</button>
 </dialog>
 
 <script src="app.js"></script>

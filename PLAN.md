@@ -73,7 +73,7 @@ The Sheet ID sits in the page source, which is unavoidable for client-side fetch
 harmless given the sheet is link-viewable anyway. Just don't keep anything private in
 that spreadsheet.
 
-## 1. Members — `index.html`
+## 1. Members — `members.html`
 
 One flat list of everyone, two view modes toggled at the top:
 
@@ -234,15 +234,16 @@ Phone is the design target; iPad and laptop are widened versions of it.
 
 ```
 PLAN.md               this document
-index.html            members
+index.html            home
+members.html          members
 leaderboard.html
 attendance.html
 photos.html
 style.css             one stylesheet, shared
 app.js                one script, shared; each page calls what it needs
 manifest.json
-assets/brand/         dragon.svg, favicon.svg, icon-192.png, icon-512.png,
-                      apple-touch-icon.png  ← swap point for your own icon
+assets/brand/         icon-source.png, icon-192.png, icon-512.png,
+                      apple-touch-icon.png  ← generated from the Draco icon
 assets/members/*.jpg  portraits, matched by name
 icloud.py             shared iCloud shared-album client (stdlib only)
 tools/sync_photos.py  picks + downloads the daily 20
@@ -273,7 +274,7 @@ Sheet ID and album token are inline constants at the top of `app.js` and
 ### Responsive check — just look at it
 
 Playwright is used to *see* the pages, not to test them. No test suite, no assertions,
-no CI. Serve locally, then for each of the four pages: resize, screenshot, look.
+no CI. Serve locally, then for each of the five pages: resize, screenshot, look.
 
 | viewport | size |
 |---|---|

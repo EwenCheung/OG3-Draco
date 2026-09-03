@@ -1,8 +1,8 @@
 # OG3 Draco
 
-A small group website for OG3 Draco — 成员、排行榜、出席、今日精选.
+A small group website for OG3 Draco — 主页、成员、排行榜、出席、照片墙.
 
-No login, no backend, no framework, no npm. Four static pages that read live data
+No login, no backend, no framework, no npm. Five static pages; the four data pages read live data
 from a Google Sheet, plus a nightly GitHub Action that refreshes the photo wall from
 our iCloud shared album.
 
@@ -37,7 +37,8 @@ on each leaderboard and calculate every rank, score and attendance rate.
 
 ## Layout
 
-Phone first. Grids are fluid (`auto-fit` + `minmax()`, `column-width`, `clamp()`), so
+Phone first. The home page is the entry point, with feature cards linking to every section.
+Grids are fluid (`auto-fit` + `minmax()`, `column-width`, `clamp()`), so
 the layout follows the actual viewport at every width instead of snapping between a
 few presets. The single real breakpoint is 768px, where the nav moves from a bottom
 tab bar to a top bar.
@@ -58,9 +59,9 @@ that spreadsheet is effectively public.
 ## Layout of the repo
 
 ```
-index.html  leaderboard.html  attendance.html  photos.html
+index.html  members.html  leaderboard.html  attendance.html  photos.html
 style.css                one stylesheet
-app.js                   one script, shared by all four pages
+app.js                   one script, shared by all five pages
 icloud.py                iCloud shared-album client (stdlib only)
 tools/sync_photos.py     picks and downloads the daily 20
 tools/make_icons.sh      regenerates app icons from one square image

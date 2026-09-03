@@ -1,4 +1,4 @@
-/* OG3 Draco — one script, shared by all four pages.
+/* OG3 Draco — one script, shared by all five pages.
    Each page runs only the bits its markup asks for. */
 
 // ── config ────────────────────────────────────────────────────────────────
@@ -127,7 +127,7 @@ function openNote(name, text) {
 
 function stale(on) { $('#notice')?.classList.toggle('show', !!on); }
 function fail(el, msg) { el.innerHTML = `<div class="state">${dracoSVG(84)}<p>${msg}</p></div>`; }
-function dracoSVG(px) { return `<img class="draco" src="assets/brand/dragon.svg" width="${px}" height="${px}" alt="">`; }
+function dracoSVG(px) { return `<img class="draco" src="assets/brand/icon-192.png" width="${px}" height="${px}" alt="">`; }
 
 // ── members ───────────────────────────────────────────────────────────────
 async function members() {
@@ -148,9 +148,12 @@ async function members() {
   const note = m => String(m.notes || m.note || '').trim();
   const role = m => {
     const value = String(m.role || '').trim();
-    if (/ff/i.test(value)) return 'FF';
-    if (/senior|\bsw\b|\bcom\b/i.test(value)) return 'COM';
+    const memberName = nameKey(m.name);
     if (/^ogl$/i.test(value)) return 'OGL';
+    if (memberName === 'wan hao' || memberName === 'ying tong') return 'SW';
+    if (/senior|\bsw\b/i.test(value)) return 'COM';
+    if (/\bcom\b/i.test(value)) return 'COM';
+    if (/ff/i.test(value)) return 'FF';
     if (/^ogm$/i.test(value)) return 'OGM';
     return value;
   };
@@ -233,8 +236,26 @@ async function members() {
   };
 
   const draw = v => {
-    box.className = v === 'list' ? 'card list' : 'grid';
-    box.innerHTML = rows.map(v === 'list' ? row : card).join('');
+    const records = rows.map((member, index) => ({ member, index, role: role(member) || '其他' }));
+    const preferredRoles = ['OGL', 'SW', 'COM', 'FF', 'OGM'];
+    const foundRoles = [...new Set(records.map(record => record.role))];
+    const groupOrder = [
+      ...preferredRoles.filter(roleName => foundRoles.includes(roleName)),
+      ...foundRoles.filter(roleName => !preferredRoles.includes(roleName))
+    ];
+    const render = v === 'list' ? row : card;
+
+    box.className = `member-groups ${v}-mode`;
+    box.innerHTML = groupOrder.map(roleName => {
+      const items = records.filter(record => record.role === roleName);
+      const roleClass = String(roleName).toLowerCase().replace(/[^a-z0-9]+/g, '-');
+      return `<section class="member-group role-${roleClass}">
+        <h3 class="member-group-title"><span>${esc(roleName)}</span></h3>
+        <div class="${v === 'list' ? 'card list member-group-list' : 'member-group-grid'}">
+          ${items.map(record => render(record.member, record.index)).join('')}
+        </div>
+      </section>`;
+    }).join('');
     document.querySelectorAll('.viewswitch button').forEach(b =>
       b.setAttribute('aria-pressed', String(b.dataset.view === v)));
     store('og3:view', v);
@@ -245,11 +266,46 @@ async function members() {
   draw(store('og3:view') || 'grid');
 }
 
+// ── home memory ───────────────────────────────────────────────────────────
+// The app icon remains the Draco mascot. The home-page frame instead chooses
+// one image from the photo-wall build each time the site opens.
+async function homePhoto() {
+  const image = $('#home-photo');
+  const frame = image?.closest('.home-photo-frame');
+  if (!image || !frame) return;
+
+  try {
+    const response = await fetch('photos/manifest.json', { cache: 'no-store' });
+    if (!response.ok) throw new Error(`Photo manifest failed (${response.status})`);
+    const list = await response.json();
+    if (!Array.isArray(list) || !list.length) throw new Error('Photo manifest is empty');
+
+    const memory = list[Math.floor(Math.random() * list.length)];
+    const full = `photos/${memory.file}`;
+    const thumb = memory.thumb ? `photos/${memory.thumb}` : '';
+    image.addEventListener('load', () => frame.classList.add('photo-loaded'), { once: true });
+    image.addEventListener('error', () => {
+      if (thumb && image.getAttribute('src') !== thumb) image.src = thumb;
+      else frame.classList.add('photo-unavailable');
+    });
+    image.src = full;
+  } catch (error) {
+    console.warn('[home-photo] random memory unavailable', error);
+    frame.classList.add('photo-unavailable');
+  }
+}
+
 // ── leaderboards ──────────────────────────────────────────────────────────
 async function board(tab, el) {
-  let rows;
-  try { const r = await sheet(tab); rows = r.rows; stale(r.stale); }
-  catch { return fail(el, '载入不到 — check your connection'); }
+  const [scoreResult, membersResult] = await Promise.allSettled([sheet(tab), sheet('members')]);
+  if (scoreResult.status !== 'fulfilled') return fail(el, '载入不到 — check your connection');
+
+  let rows = scoreResult.value.rows;
+  const pics = {};
+  if (membersResult.status === 'fulfilled') membersResult.value.rows.forEach(member => {
+    if (member.name) pics[nameKey(member.name)] = member.photos || member.photo;
+  });
+  stale(scoreResult.value.stale);
 
   rows = rows.filter(r => r.name);
   if (!rows.length) return fail(el, '还没有分数 — nobody on the board yet');
@@ -262,24 +318,48 @@ async function board(tab, el) {
   const icon = tab === 'pokemon' ? '👑' : '🔥';
   const kingClass = tab === 'pokemon' ? 'pokemon-leader' : 'upz-leader';
   const kingTitle = tab === 'pokemon' ? 'Pokémon King' : 'UPZ King';
-  el.innerHTML = '<div class="board-labels"><span>Rank</span><span>Name</span><span>Score</span></div><ol>' + rows.map((r, i) => {
-    const pos = ranked ? (+r.rank || i + 1) : i + 1;
+
+  const position = (r, i) => ranked ? (+r.rank || i + 1) : i + 1;
+  const detailButton = (r, pos, compact = false) => {
     const note = String(r.note ?? '').trim();
-    const detail = tab === 'pokemon'
-      ? `<button class="board-note detail-only" type="button" data-name="${esc(r.name)} · Pokémon GO${pos === 1 ? ' · Pokémon King' : ''}" data-note="${esc(note || '暂无其他详细资料。')}" aria-label="显示 ${esc(r.name)} 的详细资料"><b>显示详情</b></button>`
+    return tab === 'pokemon'
+      ? `<button class="board-note detail-only${compact ? ' compact-note' : ''}" type="button" data-name="${esc(r.name)} · Pokémon GO${pos === 1 ? ' · Pokémon King' : ''}" data-note="${esc(note || '暂无其他详细资料。')}" aria-label="显示 ${esc(r.name)} 的详细资料"><b>显示详情</b></button>`
       : note
-        ? `<button class="board-note" type="button" data-name="${esc(r.name)} · 最UPZ" data-note="${esc(note)}" aria-label="显示 ${esc(r.name)} 的详细资料"><span class="note-copy">${esc(note)}</span><b>显示详情</b></button>`
+        ? `<button class="board-note${compact ? ' compact-note' : ''}" type="button" data-name="${esc(r.name)} · 最UPZ" data-note="${esc(note)}" aria-label="显示 ${esc(r.name)} 的详细资料">${compact ? '' : `<span class="note-copy">${esc(note)}</span>`}<b>显示详情</b></button>`
         : '';
-    return `<li class="${pos <= 3 ? 'top' : ''}${pos === 1 ? ` ${kingClass}` : ''}">
+  };
+
+  const podiumOrder = rows.slice(0, 3);
+  if (podiumOrder.length === 3) podiumOrder.splice(0, 3, podiumOrder[1], podiumOrder[0], podiumOrder[2]);
+  const podium = podiumOrder.map((r, visualIndex) => {
+    const sourceIndex = rows.indexOf(r);
+    const pos = position(r, sourceIndex);
+    return `<article class="podium-entry place-${pos}${pos === 1 ? ` ${kingClass}` : ''}">
+      <span class="podium-spark" aria-hidden="true">${pos === 1 ? '✦' : '·'}</span>
+      <span class="podium-position">${pos}<sup>${pos === 1 ? 'st' : pos === 2 ? 'nd' : 'rd'}</sup></span>
+      ${avatar(r.name, pics[nameKey(r.name)], 'podium-avatar')}
+      <strong class="podium-name">${esc(r.name)}</strong>
+      ${pos === 1 ? `<span class="leader-title">${icon} ${kingTitle}</span>` : ''}
+      <span class="podium-score"><b>${esc(points(r))}</b> pts</span>
+      ${detailButton(r, pos, true)}
+    </article>`;
+  }).join('');
+
+  const rest = rows.slice(3).map((r, i) => {
+    const pos = position(r, i + 3);
+    return `<li>
       <span class="rank">#${esc(pos)}</span>
+      ${avatar(r.name, pics[nameKey(r.name)], 'rank-avatar')}
       <span class="who">
-        <span class="leader-name">${pos === 1 && tab === 'upz' ? `<span aria-hidden="true">${icon}</span>` : ''}<span>${esc(r.name)}</span></span>
-        ${pos === 1 && tab === 'upz' ? `<span class="leader-title">${icon} ${kingTitle}</span>` : ''}
-        ${detail}
+        <span class="leader-name"><span>${esc(r.name)}</span></span>
+        ${detailButton(r, pos)}
       </span>
       <span class="score"><strong>${esc(points(r))}</strong><small>pts</small></span>
     </li>`;
-  }).join('') + '</ol>';
+  }).join('');
+
+  el.innerHTML = `<div class="rank-podium">${podium}</div>
+    ${rest ? `<div class="board-labels"><span>Rank</span><span>Name</span><span>Score</span></div><ol start="4">${rest}</ol>` : ''}`;
 
   el.onclick = e => {
     const note = e.target.closest('.board-note');
@@ -352,10 +432,37 @@ async function attendance() {
     const isPokemonKing = pokemonWinners.has(key);
     const champion = `${isUpzKing ? ' upz-champion' : ''}${isPokemonKing ? ' pokemon-champion' : ''}${isUpzKing && isPokemonKing ? ' dual-champion' : ''}`;
     return { name, events, bonus, total, rate, barPct, isUpzKing, isPokemonKing, champion };
-  });
+  }).sort((a, b) => b.total - a.total || b.barPct - a.barPct || String(a.name).localeCompare(String(b.name)));
 
-  box.innerHTML = people.map(p => `<details class="${p.champion.trim()}">
+  const eventDetails = p => `<div class="events">
+      <span class="ev metric"><span>Total score</span><strong>${esc(p.total)}</strong></span>
+      <span class="ev metric"><span>Attendance rate</span><strong>${rateDisplay(p.rate)}</strong></span>
+      <span class="ev metric"><span>OGL bonus</span><strong>${p.bonus ? `+${esc(p.bonus)}` : '—'}</strong></span>
+      ${p.events.map(item =>
+        `<span class="ev ${item.value ? 'yes' : 'zero'}"><span>${esc(item.label)}</span><strong>${item.value ? `+${esc(item.value)}` : '—'}</strong></span>`).join('')}
+    </div>`;
+
+  const podiumOrder = people.slice(0, 3);
+  if (podiumOrder.length === 3) podiumOrder.splice(0, 3, podiumOrder[1], podiumOrder[0], podiumOrder[2]);
+  const podium = podiumOrder.map(p => {
+    const pos = people.indexOf(p) + 1;
+    return `<details class="podium-attendee place-${pos} ${p.champion.trim()}">
       <summary>
+        <span class="att-place">${pos}<sup>${pos === 1 ? 'st' : pos === 2 ? 'nd' : 'rd'}</sup></span>
+        ${avatar(p.name, pics[String(p.name).trim()])}
+        <span class="podium-person">
+          <span class="name">${esc(p.name)}</span>
+          <span class="podium-attendance">${rateDisplay(p.rate)} attendance</span>
+        </span>
+        <span class="podium-points"><strong>${esc(p.total)}</strong><small>pts</small></span>
+      </summary>
+      ${eventDetails(p)}
+    </details>`;
+  }).join('');
+
+  const ranking = people.slice(3).map((p, index) => `<details class="${p.champion.trim()}">
+      <summary>
+        <span class="att-place">#${index + 4}</span>
         ${avatar(p.name, pics[String(p.name).trim()])}
         <span class="att-person"><span class="name"><span class="champion-name${p.champion}">
           ${p.isUpzKing ? '<span class="champ-icon fire" aria-hidden="true">🔥</span>' : ''}
@@ -370,14 +477,11 @@ async function attendance() {
         <span class="att-rate"><strong>${rateDisplay(p.rate)}</strong><small>Attendance</small></span>
         <span class="att-score"><strong>${esc(p.total)}</strong><small>${p.total === 1 ? 'pt' : 'pts'}</small></span>
       </summary>
-      <div class="events">
-        <span class="ev metric"><span>Total score</span><strong>${esc(p.total)}</strong></span>
-        <span class="ev metric"><span>Attendance rate</span><strong>${rateDisplay(p.rate)}</strong></span>
-        <span class="ev metric"><span>OGL bonus</span><strong>${p.bonus ? `+${esc(p.bonus)}` : '—'}</strong></span>
-        ${p.events.map(item =>
-          `<span class="ev ${item.value ? 'yes' : 'zero'}"><span>${esc(item.label)}</span><strong>${item.value ? `+${esc(item.value)}` : '—'}</strong></span>`).join('')}
-      </div>
+      ${eventDetails(p)}
     </details>`).join('');
+
+  box.innerHTML = `<section class="attendance-podium" aria-label="Top three attendance">${podium}</section>
+    ${ranking ? `<section class="attendance-ranking">${ranking}</section>` : ''}`;
 
   // full matrix lives behind the toggle, scrolling inside its own box
   $('#matrix').innerHTML = `<table class="matrix"><thead><tr><th>成员 Name</th><th>Total attendance score</th><th>Attendance rate</th><th>OGL bonus</th>${
@@ -480,6 +584,7 @@ addEventListener('DOMContentLoaded', () => {
   document.querySelectorAll('.nav a').forEach(a =>
     a.getAttribute('href') === here && a.setAttribute('aria-current', 'page'));
   install();
+  if ($('#home-photo')) homePhoto();
   if ($('#members')) members();
   if ($('#upz')) { board('upz', $('#upz')); board('pokemon', $('#pokemon')); }
   if ($('#attendance')) attendance();
