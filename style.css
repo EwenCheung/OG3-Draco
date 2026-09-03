@@ -244,6 +244,46 @@ main::before {
 }
 .viewswitch button[aria-pressed="true"] { background: var(--accent-soft); color: var(--primary-strong); box-shadow: 1px 2px 0 var(--outline); }
 
+.member-tools {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: fit-content;
+  margin: -8px 0 22px;
+  padding: 6px 7px 6px 13px;
+  border-radius: 999px;
+  background: #E5ECDD;
+  box-shadow: 0 5px 0 #B4C5B8;
+  color: var(--primary-strong);
+  font-weight: 750;
+}
+.member-tools-label { white-space: nowrap; }
+.sortswitch {
+  display: inline-flex;
+  gap: 4px;
+  padding: 3px;
+  border-radius: 999px;
+  background: #FFF9E9;
+}
+.sortswitch button {
+  min-height: 38px;
+  padding: 7px 14px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  font: inherit;
+  font-size: .82rem;
+  font-weight: 750;
+}
+.sortswitch button[aria-pressed="true"] {
+  background: var(--primary-strong);
+  color: #FFF3C9;
+  box-shadow: 0 3px 0 #032D29;
+}
+.sortswitch button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
 .grid {
   display: grid;
   gap: clamp(14px, 2vw, 20px);
@@ -1623,4 +1663,14 @@ main {
   .portal-icon { width: 34px; height: 34px; font-size: 1rem; }
   .portal-card b { font-size: .88rem; }
   .rules-card summary { padding-inline: 14px; }
+  .member-tools {
+    align-items: flex-start;
+    width: 100%;
+    margin-top: -5px;
+    padding: 10px;
+    border-radius: 20px;
+  }
+  .member-tools-label { padding: 8px 0 0 3px; font-size: .82rem; }
+  .sortswitch { display: grid; grid-template-columns: 1fr 1fr; flex: 1; }
+  .sortswitch button { min-width: 0; padding-inline: 8px; font-size: .72rem; }
 }

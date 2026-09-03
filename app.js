@@ -279,8 +279,14 @@ async function members() {
     if (item) openMember(rows[Number(item.dataset.member)]);
   };
 
+  let currentView = store('og3:view') || 'grid';
+  let currentSort = store('og3:member-sort') || 'name';
+
   const draw = v => {
-    const records = rows.map((member, index) => ({ member, index, role: role(member) || '其他' }));
+    currentView = v;
+    const records = rows
+      .map((member, index) => ({ member, index, role: role(member) || '其他' }))
+      .sort((a, b) => compareMembers(a.member, b.member, currentSort));
     const preferredRoles = ['OGL', 'SW', 'COM', 'FF', 'OGM'];
     const foundRoles = [...new Set(records.map(record => record.role))];
     const groupOrder = [
@@ -302,12 +308,17 @@ async function members() {
     }).join('');
     document.querySelectorAll('.viewswitch button').forEach(b =>
       b.setAttribute('aria-pressed', String(b.dataset.view === v)));
+    document.querySelectorAll('.sortswitch button').forEach(b =>
+      b.setAttribute('aria-pressed', String(b.dataset.memberSort === currentSort)));
     store('og3:view', v);
+    store('og3:member-sort', currentSort);
   };
 
   document.querySelectorAll('.viewswitch button').forEach(b =>
     b.onclick = () => draw(b.dataset.view));
-  draw(store('og3:view') || 'grid');
+  document.querySelectorAll('.sortswitch button').forEach(b =>
+    b.onclick = () => { currentSort = b.dataset.memberSort; draw(currentView); });
+  draw(currentView);
 }
 
 // ── home memory ───────────────────────────────────────────────────────────

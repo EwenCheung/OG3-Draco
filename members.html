@@ -50,6 +50,13 @@
       <button data-view="list" aria-pressed="false">单 List</button>
     </div>
   </div>
+  <div class="member-tools" aria-label="成员排序">
+    <span class="member-tools-label">排序：</span>
+    <div class="sortswitch" role="group" aria-label="选择成员排序方式">
+      <button type="button" data-member-sort="name" aria-pressed="true">名字 A-Z</button>
+      <button type="button" data-member-sort="birthday" aria-pressed="false">生日 1月-12月</button>
+    </div>
+  </div>
   <div id="members" class="grid"><div class="state">载入中 Loading…</div></div>
 </main>
 
