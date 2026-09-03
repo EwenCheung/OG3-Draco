@@ -1436,6 +1436,63 @@ main {
 }
 .home-hero::before,
 .home-hero::after { display: none; }
+.birthday-banner[hidden] { display: none; }
+.birthday-banner {
+  width: min(100%, 420px);
+  margin: 0 0 22px;
+  padding: 11px 12px 12px;
+  border-radius: 20px;
+  background: #F4E6AE;
+  box-shadow: 0 5px 0 #C8B66F;
+  color: var(--primary-strong);
+}
+.birthday-banner-head {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 8px;
+  font-family: "Fredoka", sans-serif;
+}
+.birthday-banner-head > span { font-size: 1.1rem; }
+.birthday-banner-head strong { font-size: .9rem; letter-spacing: .04em; }
+.birthday-banner-head small {
+  margin-left: auto;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: var(--primary-strong);
+  color: #FFF3C9;
+  font-size: .68rem;
+  font-weight: 750;
+}
+.birthday-list {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 1px 0 3px;
+  scrollbar-width: thin;
+}
+.birthday-person {
+  display: grid;
+  grid-template-columns: 38px max-content;
+  align-items: center;
+  flex: 0 0 auto;
+  gap: 8px;
+  min-width: 145px;
+  padding: 6px 10px 6px 7px;
+  border-radius: 15px;
+  background: #FFF9E9;
+}
+.birthday-person .birthday-avatar {
+  width: 38px;
+  height: 38px;
+  margin: 0;
+  border: 3px solid #D7B94F;
+  border-radius: 12px;
+  box-shadow: none;
+}
+.birthday-person > span { display: grid; line-height: 1.2; }
+.birthday-person strong { font-size: .78rem; }
+.birthday-person small { margin-top: 3px; color: var(--muted); font-size: .68rem; font-weight: 700; }
 .eyebrow {
   margin-bottom: 8px;
   color: var(--primary-strong);
@@ -1643,6 +1700,9 @@ main {
 
 @media (max-width: 680px) {
   .home-hero { padding-top: 31px; }
+  .birthday-banner { width: 100%; margin-bottom: 18px; padding: 9px 10px 10px; border-radius: 17px; }
+  .birthday-banner-head { margin-bottom: 6px; }
+  .birthday-person { min-width: 136px; }
   .hero-note { display: block; margin-bottom: 34px; }
   .hero-cta { margin-left: 0; }
   .hero-art { min-height: 330px; }

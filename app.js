@@ -350,6 +350,45 @@ async function homePhoto() {
   }
 }
 
+// The homepage and member directory both read the same live Members sheet.
+// Only month/day matters, so the banner continues to work when the sheet's
+// display year changes and disappears entirely when this month has no match.
+async function homeBirthdays(today = new Date()) {
+  const banner = $('#birthday-banner');
+  if (!banner) return;
+
+  try {
+    const result = await sheet('members');
+    const currentMonth = today.getMonth() + 1;
+    const people = result.rows
+      .map(member => ({ member, birthday: birthdayParts(member.birthday) }))
+      .filter(person => person.member.name && person.birthday?.month === currentMonth)
+      .sort((a, b) => a.birthday.day - b.birthday.day
+        || compareMembers(a.member, b.member, 'name'));
+
+    if (!people.length) {
+      banner.replaceChildren();
+      banner.hidden = true;
+      return;
+    }
+
+    banner.innerHTML = `<div class="birthday-banner-head">
+        <span aria-hidden="true">🎂</span>
+        <strong>本月寿星</strong>
+        <small>${currentMonth}月</small>
+      </div>
+      <div class="birthday-list">${people.map(({ member, birthday }) =>
+        `<div class="birthday-person">
+          ${avatar(member.name, member.photos || member.photo, 'birthday-avatar')}
+          <span><strong>${esc(member.name)}</strong><small>${birthday.month}月${birthday.day}日</small></span>
+        </div>`).join('')}</div>`;
+    banner.hidden = false;
+  } catch (error) {
+    console.warn('[home-birthdays] member data unavailable', error);
+    banner.hidden = true;
+  }
+}
+
 // ── leaderboards ──────────────────────────────────────────────────────────
 async function board(tab, el) {
   const [scoreResult, membersResult] = await Promise.allSettled([sheet(tab), sheet('members')]);
@@ -640,6 +679,7 @@ addEventListener('DOMContentLoaded', () => {
     a.getAttribute('href') === here && a.setAttribute('aria-current', 'page'));
   install();
   if ($('#home-photo')) homePhoto();
+  if ($('#birthday-banner')) homeBirthdays();
   if ($('#members')) members();
   if ($('#upz')) { board('upz', $('#upz')); board('pokemon', $('#pokemon')); }
   if ($('#attendance')) attendance();
