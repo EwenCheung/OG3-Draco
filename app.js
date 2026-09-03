@@ -71,6 +71,16 @@ const esc = s => String(s ?? '').replace(/[<>&"]/g, c => ({ '<': '&lt;', '>': '&
 const inits = n => String(n).trim().split(/\s+/).slice(0, 2).map(w => w[0] || '').join('').toUpperCase();
 const nameKey = n => String(n ?? '').trim().toLocaleLowerCase().replace(/\s+/g, ' ');
 const points = r => r.score ?? r.marks ?? r.points ?? r.total ?? '';
+const pinyinCollator = new Intl.Collator(['zh-Hans-u-co-pinyin', 'en'], {
+  sensitivity: 'base', numeric: true
+});
+
+// Existing English/pinyin names sort directly. If a Chinese display name is
+// added later, an optional Pinyin / SortName sheet column keeps the order
+// explicit without changing what visitors see on the card.
+const memberSortName = member => String(
+  member.sortname ?? member.sort_name ?? member.pinyin ?? member.name ?? ''
+).trim();
 
 // Prefer the sheet's explicit Rank column so ties remain exactly as the editor
 // intended. If a board has no Rank column, everyone tied at the highest score wins.
@@ -107,14 +117,48 @@ function avatar(name, photo, cls = '') {
     : fallback;
 }
 
-// Date cells come back as "Date(2003,2,12)" with a ZERO-indexed month — read it
-// naively and every birthday shifts back a month.
-function birthday(v) {
-  if (!v) return '';
-  const m = /^Date\((\d+),(\d+),(\d+)\)/.exec(String(v));
-  const d = m ? new Date(+m[1], +m[2], +m[3]) : new Date(v);
-  if (isNaN(d)) return String(v);
-  return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+// Date cells come back as "Date(2003,2,12)" with a ZERO-indexed month. Keep
+// month/day as plain numbers so sorting and the homepage banner share exactly
+// the same timezone-safe interpretation.
+function birthdayParts(value) {
+  if (!value) return null;
+  if (typeof value === 'object' && value.month && value.day) {
+    const month = Number(value.month), day = Number(value.day);
+    return month >= 1 && month <= 12 && day >= 1 && day <= 31 ? { month, day } : null;
+  }
+
+  const text = String(value).trim();
+  const googleDate = /^Date\((\d+),(\d+),(\d+)\)/.exec(text);
+  if (googleDate) return { month: Number(googleDate[2]) + 1, day: Number(googleDate[3]) };
+
+  const isoDate = /^(?:\d{4}-)?(\d{1,2})-(\d{1,2})(?:$|T)/.exec(text);
+  if (isoDate) return { month: Number(isoDate[1]), day: Number(isoDate[2]) };
+
+  const parsed = new Date(text);
+  return Number.isNaN(parsed.getTime())
+    ? null
+    : { month: parsed.getMonth() + 1, day: parsed.getDate() };
+}
+
+function birthday(value) {
+  const parts = birthdayParts(value);
+  if (!parts) return value ? String(value) : '';
+  return new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', timeZone: 'UTC' })
+    .format(new Date(Date.UTC(2000, parts.month - 1, parts.day)));
+}
+
+function compareMembers(a, b, mode = 'name') {
+  if (mode === 'birthday') {
+    const aBirthday = birthdayParts(a.birthday);
+    const bBirthday = birthdayParts(b.birthday);
+    if (aBirthday && bBirthday) {
+      const dateOrder = aBirthday.month - bBirthday.month || aBirthday.day - bBirthday.day;
+      if (dateOrder) return dateOrder;
+    } else if (aBirthday || bBirthday) {
+      return aBirthday ? -1 : 1;
+    }
+  }
+  return pinyinCollator.compare(memberSortName(a), memberSortName(b));
 }
 
 function openNote(name, text) {
