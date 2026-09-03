@@ -148,9 +148,12 @@ async function members() {
   const note = m => String(m.notes || m.note || '').trim();
   const role = m => {
     const value = String(m.role || '').trim();
-    if (/ff/i.test(value)) return 'FF';
-    if (/senior|\bsw\b|\bcom\b/i.test(value)) return 'COM';
+    const memberName = nameKey(m.name);
     if (/^ogl$/i.test(value)) return 'OGL';
+    if (memberName === 'wan hao' || memberName === 'ying tong') return 'SW';
+    if (/senior|\bsw\b/i.test(value)) return 'COM';
+    if (/\bcom\b/i.test(value)) return 'COM';
+    if (/ff/i.test(value)) return 'FF';
     if (/^ogm$/i.test(value)) return 'OGM';
     return value;
   };
@@ -233,8 +236,26 @@ async function members() {
   };
 
   const draw = v => {
-    box.className = v === 'list' ? 'card list' : 'grid';
-    box.innerHTML = rows.map(v === 'list' ? row : card).join('');
+    const records = rows.map((member, index) => ({ member, index, role: role(member) || '其他' }));
+    const preferredRoles = ['OGL', 'SW', 'COM', 'FF', 'OGM'];
+    const foundRoles = [...new Set(records.map(record => record.role))];
+    const groupOrder = [
+      ...preferredRoles.filter(roleName => foundRoles.includes(roleName)),
+      ...foundRoles.filter(roleName => !preferredRoles.includes(roleName))
+    ];
+    const render = v === 'list' ? row : card;
+
+    box.className = `member-groups ${v}-mode`;
+    box.innerHTML = groupOrder.map(roleName => {
+      const items = records.filter(record => record.role === roleName);
+      const roleClass = String(roleName).toLowerCase().replace(/[^a-z0-9]+/g, '-');
+      return `<section class="member-group role-${roleClass}">
+        <h3 class="member-group-title"><span>${esc(roleName)}</span></h3>
+        <div class="${v === 'list' ? 'card list member-group-list' : 'member-group-grid'}">
+          ${items.map(record => render(record.member, record.index)).join('')}
+        </div>
+      </section>`;
+    }).join('');
     document.querySelectorAll('.viewswitch button').forEach(b =>
       b.setAttribute('aria-pressed', String(b.dataset.view === v)));
     store('og3:view', v);
@@ -243,6 +264,35 @@ async function members() {
   document.querySelectorAll('.viewswitch button').forEach(b =>
     b.onclick = () => draw(b.dataset.view));
   draw(store('og3:view') || 'grid');
+}
+
+// ── home memory ───────────────────────────────────────────────────────────
+// The app icon remains the Draco mascot. The home-page frame instead chooses
+// one image from the photo-wall build each time the site opens.
+async function homePhoto() {
+  const image = $('#home-photo');
+  const frame = image?.closest('.home-photo-frame');
+  if (!image || !frame) return;
+
+  try {
+    const response = await fetch('photos/manifest.json', { cache: 'no-store' });
+    if (!response.ok) throw new Error(`Photo manifest failed (${response.status})`);
+    const list = await response.json();
+    if (!Array.isArray(list) || !list.length) throw new Error('Photo manifest is empty');
+
+    const memory = list[Math.floor(Math.random() * list.length)];
+    const full = `photos/${memory.file}`;
+    const thumb = memory.thumb ? `photos/${memory.thumb}` : '';
+    image.addEventListener('load', () => frame.classList.add('photo-loaded'), { once: true });
+    image.addEventListener('error', () => {
+      if (thumb && image.getAttribute('src') !== thumb) image.src = thumb;
+      else frame.classList.add('photo-unavailable');
+    });
+    image.src = full;
+  } catch (error) {
+    console.warn('[home-photo] random memory unavailable', error);
+    frame.classList.add('photo-unavailable');
+  }
 }
 
 // ── leaderboards ──────────────────────────────────────────────────────────
@@ -534,6 +584,7 @@ addEventListener('DOMContentLoaded', () => {
   document.querySelectorAll('.nav a').forEach(a =>
     a.getAttribute('href') === here && a.setAttribute('aria-current', 'page'));
   install();
+  if ($('#home-photo')) homePhoto();
   if ($('#members')) members();
   if ($('#upz')) { board('upz', $('#upz')); board('pokemon', $('#pokemon')); }
   if ($('#attendance')) attendance();

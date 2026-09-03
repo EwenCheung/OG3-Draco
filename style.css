@@ -1348,3 +1348,279 @@ main::before { opacity: .7; }
   .att .podium-attendee .avatar { width: 54px; height: 54px; }
   .att .podium-attendee.place-1 .avatar { width: 66px; height: 66px; }
 }
+
+/* ---------- Grounded, layered refinement ---------- */
+body::before {
+  background:
+    radial-gradient(ellipse at 8% 18%, rgba(106, 198, 169, .15), transparent 34%),
+    radial-gradient(ellipse at 92% 72%, rgba(228, 190, 76, .1), transparent 32%),
+    linear-gradient(to top, rgba(1, 25, 23, .32), transparent 48%);
+}
+.top::after,
+main::before,
+.orbit,
+.star,
+.tape { display: none; }
+
+.top {
+  border: 0;
+  border-radius: 22px;
+  box-shadow: 0 7px 0 #031F1D;
+}
+.top .draco { border: 0; box-shadow: none; }
+.top .icon-btn {
+  border: 0;
+  background: #0B514A;
+  box-shadow: 0 4px 0 #032B28;
+}
+.nav {
+  border: 0;
+  box-shadow: 0 -5px 0 rgba(3, 35, 32, .18);
+}
+main {
+  border: 0;
+  background: #F8F4E6;
+  box-shadow: 0 9px 0 rgba(3, 35, 32, .34);
+  backdrop-filter: none;
+}
+.card { border: 0; }
+.icon-btn { border: 0; box-shadow: 0 4px 0 rgba(4, 53, 48, .3); }
+.icon-btn:hover { transform: none; }
+
+/* A simpler home hero: copy on one side, a random photo-wall memory on the other. */
+.home-hero {
+  min-height: 520px;
+  border: 0;
+  background: linear-gradient(128deg, #F8F3DF 0%, #E2EBD2 100%);
+  box-shadow: 0 9px 0 #043A36;
+}
+.home-hero::before,
+.home-hero::after { display: none; }
+.eyebrow {
+  margin-bottom: 8px;
+  color: var(--primary-strong);
+  font-size: 1.05rem;
+  letter-spacing: .24em;
+}
+.hero-copy h2 > span {
+  text-shadow: 0 7px 0 rgba(44, 143, 130, .16);
+}
+.hero-note {
+  margin: 24px 0 26px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--text);
+  font-size: 1rem;
+  font-weight: 700;
+}
+.hero-cta {
+  margin-left: clamp(72px, 7vw, 112px);
+  border: 0;
+  box-shadow: 0 6px 0 #032D29;
+}
+.hero-cta:hover { transform: none; box-shadow: 0 6px 0 #032D29; filter: brightness(1.08); }
+.hero-art { min-height: 390px; }
+.mascot-frame.home-photo-frame {
+  inset: 0;
+  padding: 0;
+  overflow: hidden;
+  border: 0;
+  border-radius: 26px;
+  background:
+    radial-gradient(circle at 25% 30%, rgba(244, 210, 103, .35), transparent 24%),
+    linear-gradient(145deg, #BBDDC8, #75AE9F);
+  box-shadow: 0 9px 0 #0A4C45;
+  transform: none;
+}
+.home-photo-frame img {
+  width: 100%; height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  transition: opacity .28s ease;
+}
+.home-photo-frame.photo-loaded img { opacity: 1; }
+.home-photo-frame.photo-unavailable::after {
+  content: "";
+  position: absolute;
+  inset: 18%;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 246, 206, .34), transparent 68%);
+}
+
+.portal-section {
+  border: 0;
+  background: #073F3B;
+  box-shadow: 0 9px 0 #021E1C;
+  backdrop-filter: none;
+}
+.portal-head { margin-bottom: 22px; }
+.portal-grid { gap: 16px; }
+.portal-card {
+  grid-template-columns: 48px minmax(0, 1fr);
+  min-height: 100px;
+  border: 0;
+  background: #EEF1DC;
+  box-shadow: 0 6px 0 #B7C7B4;
+}
+.portal-card:nth-child(2),
+.portal-card:nth-child(4) { background: #F4E6AE; box-shadow: 0 6px 0 #C8B66F; }
+.portal-card:hover { transform: none; box-shadow: 0 6px 0 #AFC0AC; filter: brightness(1.025); }
+.portal-card:nth-child(2):hover,
+.portal-card:nth-child(4):hover { box-shadow: 0 6px 0 #C1AE65; }
+.portal-card b { font-size: 1.08rem; }
+.portal-icon { border: 0; }
+
+/* Member roles occupy separate visual tiers instead of one undifferentiated grid. */
+.member-groups { display: grid; gap: 25px; }
+.member-group {
+  padding: 18px;
+  border-radius: 28px;
+  background: #E5ECDD;
+  box-shadow: 0 7px 0 #B4C5B8;
+}
+.member-group:nth-child(even) { background: #F2E8BC; box-shadow: 0 7px 0 #C8B875; }
+.member-group-title {
+  margin: 0 0 15px;
+  color: var(--primary-strong);
+  font-size: 1.02rem;
+  letter-spacing: .12em;
+}
+.member-group-title span {
+  display: inline-block;
+  min-width: 76px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: var(--primary-strong);
+  color: #FFF3C9;
+  text-align: center;
+}
+.member-group-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 170px));
+  justify-content: space-evenly;
+  gap: 16px;
+}
+.member-group .m-card {
+  border: 0;
+  background: #FFF9E9;
+  box-shadow: 0 6px 0 rgba(8, 63, 58, .2);
+}
+.member-group .m-card:nth-child(3n + 2),
+.member-group .m-card:nth-child(4n) { background: #FFF9E9; }
+.member-group .m-card:not(.pokemon-champion, .upz-champion):hover {
+  transform: none;
+  box-shadow: 0 6px 0 rgba(8, 63, 58, .2);
+  filter: brightness(1.025);
+}
+.member-group-list { overflow: hidden; box-shadow: none; }
+.member-group-list .row { background: #FFF9E9; }
+
+/* Rankings and attendance sit firmly on solid panels with minimal linework. */
+.board {
+  border: 0;
+  box-shadow: 0 8px 0 #B7C6B2;
+}
+.board h3 { border: 0; }
+.rank-podium { border: 0; }
+.podium-entry {
+  border: 0;
+  box-shadow: 0 7px 0 #B4C6B5;
+}
+.podium-entry.place-1 {
+  border: 0;
+  box-shadow: 0 7px 0 #C09D37;
+  transform: none;
+}
+.podium-entry.place-3 { box-shadow: 0 7px 0 #C4B77F; }
+.podium-entry .podium-avatar,
+.podium-entry.place-1 .podium-avatar { border: 5px solid #FFF9E8; box-shadow: none; }
+.board-labels { border-block: 0; background: #E1E9D8; }
+.board li { border-bottom: 0; }
+.board li:nth-child(even) { background: #F1EDDD; }
+
+.rules-card {
+  width: 100%;
+  margin-bottom: 24px;
+  overflow: hidden;
+  border: 0;
+  border-radius: 20px;
+  background: #E8EFD9;
+  box-shadow: 0 6px 0 #B5C6B6;
+}
+.rules-card summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
+  min-height: 58px;
+  padding: 13px 18px;
+  list-style: none;
+  cursor: pointer;
+  background: var(--primary-strong);
+  color: #FFF4CF;
+  font-family: "Fredoka", sans-serif;
+  font-size: .92rem;
+  font-weight: 700;
+}
+.rules-card summary::-webkit-details-marker { display: none; }
+.rules-card summary span {
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: #E8C75D;
+  color: #173B35;
+  font-family: inherit;
+  font-size: .7rem;
+}
+.rules-card[open] summary span { font-size: 0; }
+.rules-card[open] summary span::after { content: "收起规则 −"; font-size: .7rem; }
+.rules-card p { border: 0; background: #F8F4E6; }
+
+.att details.podium-attendee,
+.att details.podium-attendee.place-1 {
+  border: 0;
+  box-shadow: 0 7px 0 #B4C6B5;
+  transform: none;
+}
+.att details.podium-attendee.place-1 { box-shadow: 0 7px 0 #C09D37; }
+.att details.podium-attendee.place-3 { box-shadow: 0 7px 0 #C4B77F; }
+.att .podium-attendee .avatar,
+.att .podium-attendee.place-1 .avatar { border: 5px solid #FFF9E8; box-shadow: none; }
+.attendance-ranking { border: 0; box-shadow: 0 7px 0 #B7C6B2; }
+.attendance-ranking details { border-bottom: 0; }
+.attendance-ranking details:nth-child(even) { background: #F0EDDE; }
+.rules-card + .att { margin-top: 0; }
+.photos button,
+.more { border: 0; box-shadow: 0 6px 0 rgba(4, 57, 52, .22); }
+
+@media (min-width: 768px) {
+  .nav {
+    border: 0;
+    box-shadow: 0 6px 0 rgba(3, 35, 32, .28);
+  }
+}
+
+@media (max-width: 680px) {
+  .home-hero { padding-top: 31px; }
+  .hero-note { display: block; margin-bottom: 34px; }
+  .hero-cta { margin-left: 0; }
+  .hero-art { min-height: 330px; }
+  .mascot-frame.home-photo-frame { inset: 0; }
+  .portal-card { min-height: 82px; }
+  .member-group { padding: 13px; border-radius: 23px; }
+  .member-group-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+  .member-group-title { margin-bottom: 12px; }
+  .member-group-title span { min-width: 67px; padding: 5px 12px; }
+}
+
+@media (max-width: 520px) {
+  .home-hero { padding: 30px 22px 22px; }
+  .hero-note { margin-bottom: 34px; font-size: .9rem; }
+  .portal-section { padding: 24px 16px 27px; }
+  .portal-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 11px; }
+  .portal-card { grid-template-columns: 38px minmax(0, 1fr); padding: 14px 11px; border-radius: 18px; }
+  .portal-icon { width: 34px; height: 34px; font-size: 1rem; }
+  .portal-card b { font-size: .88rem; }
+  .rules-card summary { padding-inline: 14px; }
+}
