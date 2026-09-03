@@ -24,7 +24,7 @@
   <img class="draco" src="assets/brand/dragon.svg" alt="" width="40" height="40">
   <h1 class="brand">OG3 <span>Draco</span></h1>
   <div class="top-actions">
-    <button class="icon-btn" id="install" type="button" hidden title="加到主页 Add to Home Screen" aria-label="加到主页 Add to Home Screen">＋</button>
+    <button class="icon-btn" id="install" type="button" hidden title="添加到主屏幕" aria-label="添加到主屏幕">＋</button>
     <button class="icon-btn" id="share" type="button" title="分享 Share" aria-label="分享 Share">↗</button>
   </div>
 </header>
@@ -49,20 +49,19 @@
 </main>
 
 <dialog id="install-sheet">
-  <h2 style="margin-top:0">加到主页 Add to Home Screen</h2>
-  <p>iPhone 没有一键安装 — Apple doesn't allow it, so two taps:</p>
-  <ol>
-    <li>撳 Safari 下面嘅 <strong>分享 Share</strong> 掣 ⬆️</li>
-    <li>拣 <strong>Add to Home Screen 加到主畫面</strong></li>
+  <h2>添加到主屏幕</h2>
+  <p class="install-intro">iPhone 安装方法：</p>
+  <ol class="install-steps">
+    <li>在 Safari 中点击底部的“分享”按钮。</li>
+    <li>选择“添加到主屏幕”。</li>
   </ol>
-  <p style="color:var(--muted);font-size:.88rem">之后就好似 app 咁 — full screen, no address bar.</p>
-  <button class="icon-btn" id="install-close" type="button" style="width:100%">好 OK</button>
+  <p class="install-note">完成后，即可从主屏幕直接打开。</p>
+  <button class="icon-btn" id="install-close" type="button">好的</button>
 </dialog>
 
-<dialog id="note-sheet" class="note-sheet">
-  <h2></h2>
-  <p></p>
-  <button class="icon-btn" id="note-close" type="button">关 Close</button>
+<dialog id="member-sheet" class="note-sheet member-sheet" aria-labelledby="member-detail-title">
+  <div class="member-detail"></div>
+  <button class="icon-btn" id="member-close" type="button">关闭</button>
 </dialog>
 
 <script src="app.js"></script>

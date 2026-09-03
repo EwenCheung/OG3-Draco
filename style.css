@@ -299,6 +299,15 @@ main::before {
   transition: transform .18s ease, box-shadow .18s ease;
 }
 .m-card:not(.pokemon-champion, .upz-champion):hover { transform: translateY(-3px); box-shadow: var(--shadow-hover); }
+.member-card { display: flex; flex-direction: column; align-items: center; }
+.member-open {
+  width: 100%; padding: 0; border: 0; background: none; color: inherit;
+  font: inherit; cursor: pointer;
+}
+.member-card .member-open { display: flex; flex-direction: column; align-items: center; }
+.member-card .name { margin-top: 2px; font-size: 1rem; }
+.member-card .member-role { margin-top: 8px; }
+.member-card .ig { margin-top: 7px; }
 .m-card .avatar {
   width: 100%; aspect-ratio: 1; border: 3px solid var(--border); border-radius: 16px;
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--surface) 85%, transparent);
@@ -439,6 +448,19 @@ main::before {
 }
 .list .more-btn:hover { color: var(--primary); text-decoration: none; }
 
+.list .member-row {
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+}
+.member-row-open { display: grid; grid-template-columns: 52px minmax(0, 1fr); gap: 12px; align-items: center; text-align: left; }
+.list .member-row .row-avatar {
+  width: 52px; height: 52px; border: 2px solid var(--border); border-radius: 15px;
+  font-size: .82rem;
+}
+.member-row-copy { display: block; min-width: 0; }
+.member-row-copy .name { margin-bottom: 4px; }
+.member-row > .ig { align-self: center; }
+
 /* ---------- leaderboards ---------- */
 .boards {
   display: grid; gap: 20px; align-items: start;
@@ -526,6 +548,55 @@ main::before {
   color: var(--primary); font-size: .66rem; white-space: nowrap;
 }
 .board-note:hover b { text-decoration: underline; }
+
+.board-note.detail-only {
+  display: inline-flex;
+  width: auto;
+  margin-top: 7px;
+  padding: 3px 9px;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--surface) 70%, transparent);
+}
+
+/* The rankings use solid panels and short shadows so the information feels
+   grounded while retaining the playful forest palette. */
+.leaderboard-page main {
+  background: var(--surface);
+  box-shadow: 3px 4px 0 color-mix(in srgb, var(--outline) 24%, transparent);
+  backdrop-filter: none;
+}
+.leaderboard-page .board {
+  background: var(--surface);
+  box-shadow: 3px 4px 0 color-mix(in srgb, var(--outline) 24%, transparent);
+}
+.leaderboard-page .board-labels { border-bottom: 2px solid var(--outline); }
+.leaderboard-page .board li {
+  border-bottom: 1px solid var(--border);
+}
+.leaderboard-page .board li.top:not(.pokemon-leader, .upz-leader) {
+  margin: 8px 0;
+  border: 2px solid var(--outline);
+  border-radius: 14px;
+  background: var(--forest);
+  box-shadow: 2px 3px 0 color-mix(in srgb, var(--outline) 28%, transparent);
+  color: #FFF7D8;
+}
+.leaderboard-page .board li.top:not(.pokemon-leader, .upz-leader) :is(.rank, .score, .score small, .board-note b) {
+  color: #F2CD68;
+}
+.leaderboard-page .board li:is(.pokemon-leader, .upz-leader) {
+  box-shadow: 3px 4px 0 color-mix(in srgb, var(--leader-border) 40%, transparent);
+}
+.leaderboard-page .board li:is(.pokemon-leader, .upz-leader) :is(.rank, .score strong, .leader-name) {
+  text-shadow: none;
+}
+.leaderboard-page .board-note.detail-only {
+  border-color: var(--outline);
+  background: #FFFBEA;
+  color: var(--outline) !important;
+}
+.leaderboard-page .board-note.detail-only b { color: var(--outline) !important; }
 
 /* ---------- attendance ---------- */
 .rules-card { margin-bottom: 20px; overflow: hidden; }
@@ -672,14 +743,47 @@ dialog::backdrop { background: rgba(8,16,13,.9); }
 .lb button { min-width: 46px; min-height: 46px; border-radius: 14px; border: 2px solid #EBC963; background: rgba(18,62,44,.88); color: #FFF4C4; font-size: 1.1rem; cursor: pointer; }
 
 /* ---------- install sheet ---------- */
-#install-sheet { width: min(420px, 92vw); height: auto; margin: auto; border: 3px solid var(--outline); border-radius: 22px;
-  background: var(--surface); color: var(--text); padding: 22px; box-shadow: var(--shadow); }
-#install-sheet ol { padding-left: 20px; line-height: 2; }
+#install-sheet { width: min(440px, 92vw); height: auto; margin: auto; border: 3px solid var(--outline); border-radius: 22px;
+  background: var(--surface); color: var(--text); padding: 24px; box-shadow: var(--shadow); }
+#install-sheet h2 { margin: 0 0 20px; color: var(--primary-strong); font-size: clamp(1.55rem, 6vw, 2rem); }
+#install-sheet .install-intro { margin: 0 0 8px; font-weight: 700; }
+#install-sheet .install-steps { margin: 0; padding-left: 24px; line-height: 1.75; }
+#install-sheet .install-steps li + li { margin-top: 8px; }
+#install-sheet .install-note { margin: 18px 0; color: var(--muted); font-size: .9rem; }
+#install-sheet #install-close { width: 100%; }
 .note-sheet { width: min(480px, 92vw); height: fit-content; max-height: 84vh; margin: auto; overflow: auto;
   border: 3px solid var(--outline); border-radius: 22px; background: var(--surface); color: var(--text); padding: 22px; box-shadow: var(--shadow); }
 .note-sheet h2 { margin: 0 0 10px; font-size: 1.15rem; }
 .note-sheet p { margin: 0 0 16px; white-space: pre-wrap; }
 .note-sheet #note-close { width: 100%; }
+
+.member-sheet { width: min(650px, calc(100% - 24px)); max-height: 88vh; padding: 0; }
+.member-detail { padding: clamp(18px, 4vw, 28px); }
+.member-detail-head { display: grid; grid-template-columns: 132px minmax(0, 1fr); gap: 20px; align-items: center; }
+.member-detail-photo .avatar {
+  width: 132px; height: 132px; border: 3px solid var(--border); border-radius: 20px;
+  box-shadow: 3px 4px 0 color-mix(in srgb, var(--outline) 25%, transparent);
+}
+.member-detail-title { min-width: 0; }
+.member-detail-title h2 { margin: 7px 0 3px; color: var(--primary-strong); font-size: clamp(1.5rem, 5vw, 2rem); }
+.member-detail-title .member-titles { justify-content: flex-start; margin-top: 10px; }
+.member-facts {
+  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 9px;
+  margin: 22px 0 0;
+}
+.member-facts div {
+  min-width: 0; padding: 10px 12px; border: 2px solid var(--border); border-radius: 14px;
+  background: var(--surface-2);
+}
+.member-facts dt { color: var(--muted); font-size: .68rem; font-weight: 800; letter-spacing: .05em; }
+.member-facts dd { margin: 2px 0 0; color: var(--text); font-weight: 700; overflow-wrap: anywhere; }
+.member-detail-note {
+  margin-top: 14px; padding: 14px 16px; border: 2px solid var(--outline); border-radius: 16px;
+  background: var(--accent-soft);
+}
+.member-detail-note h3 { margin: 0 0 5px; color: var(--primary-strong); font-size: .95rem; }
+.member-detail-note p { margin: 0; color: var(--text); line-height: 1.65; }
+.member-sheet #member-close { width: calc(100% - 36px); margin: 0 18px 18px; }
 
 /* ---------- mascot motion ---------- */
 #draco-float { animation: float 4.5s ease-in-out infinite; transform-origin: 100px 120px; }
@@ -709,10 +813,9 @@ dialog::backdrop { background: rgba(8,16,13,.9); }
   }
   .nav a .zh { font-size: 1rem; }
   .nav a .en { display: none; }
-  .nav a[aria-current="page"] .zh { padding: 0; }
+  .nav a[aria-current="page"] .zh { padding: 5px 18px; }
   .nav a[aria-current="page"] {
-    border-color: var(--outline); background: var(--accent-soft);
-    box-shadow: 2px 2px 0 var(--outline);
+    border-color: transparent; background: transparent; box-shadow: none;
   }
   main { margin-top: 16px; }
 }
@@ -735,6 +838,9 @@ dialog::backdrop { background: rgba(8,16,13,.9); }
   .m-card .avatar { border-width: 2px; }
   .nav a { font-size: .94rem; }
   .nav a[aria-current="page"] .zh { padding-inline: 9px; }
+  .member-detail-head { grid-template-columns: 92px minmax(0, 1fr); gap: 14px; }
+  .member-detail-photo .avatar { width: 92px; height: 92px; border-radius: 16px; }
+  .member-facts { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 350px) {

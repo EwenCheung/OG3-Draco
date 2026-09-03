@@ -146,12 +146,16 @@ async function members() {
   catch { return fail(box, '载入不到成员名单 — check your connection'); }
 
   const note = m => String(m.notes || m.note || '').trim();
+  const role = m => {
+    const value = String(m.role || '').trim();
+    if (/ff/i.test(value)) return 'FF';
+    if (/senior|\bsw\b|\bcom\b/i.test(value)) return 'COM';
+    if (/^ogl$/i.test(value)) return 'OGL';
+    if (/^ogm$/i.test(value)) return 'OGM';
+    return value;
+  };
   const ig = m => m.instagram ? `<a class="ig" target="_blank" rel="noopener"
         href="https://instagram.com/${esc(String(m.instagram).replace(/^@/, ''))}">@${esc(String(m.instagram).replace(/^@/, ''))}</a>` : '';
-  // The back face clamps to a few lines; anything longer gets a button that
-  // reopens the whole note in a dialog, where there is room for it.
-  const moreBtn = (m, n, label) =>
-    `<button class="more-btn" data-name="${esc(m.name)}" data-note="${esc(n)}">${label}</button>`;
 
   const championDecorations = m => {
     const key = nameKey(m.name);
@@ -172,66 +176,65 @@ async function members() {
     };
   };
 
-  const card = m => {
-    const n = note(m);
-    const decoration = championDecorations(m);
-    return `<div class="card m-card${n ? ' flip' : ''}${decoration.champion}"${n ? ` tabindex="0" role="button" aria-expanded="false" aria-label="${esc(m.name)} — 笔记 notes"` : ''}>
-      <div class="face front">
+  // Cards stay deliberately concise. Every other existing member field remains
+  // available in the detail board opened from the card or compact row.
+  const card = (m, index) =>
+    `<article class="card m-card member-card">
+      <button class="member-open" type="button" aria-haspopup="dialog"
+          aria-label="查看 ${esc(m.name)} 的详细资料" data-member="${index}">
         ${avatar(m.name, m.photos || m.photo)}
-        <div class="name">${decoration.title}${n ? '<span class="note-mark" aria-label="Has notes">📝</span>' : ''}</div>
-        ${decoration.titles}
-        ${m.role ? `<div class="member-role">${esc(m.role)}</div>` : ''}
-        <div class="meta">${esc(m.hall || '')}</div>
-        <div style="margin:6px 0 4px"><span class="badge">${esc(m.mbti || '—')}</span></div>
-        <div class="meta">🎂 ${esc(birthday(m.birthday))}</div>
-        ${ig(m)}
-      </div>
-      ${n ? `<div class="face back">
-        <div class="name">${esc(m.name)}</div>
-        <p class="note-text">${esc(n)}</p>
-        ${moreBtn(m, n, '查看全部 More')}
-      </div>` : ''}
-    </div>`;
-  };
+        <span class="name">${esc(m.name)}</span>
+        ${role(m) ? `<span class="member-role">${esc(role(m))}</span>` : ''}
+      </button>
+      ${ig(m)}
+    </article>`;
 
-  const row = m => {
-    const n = note(m);
+  const row = (m, index) => `<div class="row member-row">
+    <button class="member-open member-row-open" type="button" aria-haspopup="dialog"
+        aria-label="查看 ${esc(m.name)} 的详细资料" data-member="${index}">
+      ${avatar(m.name, m.photos || m.photo, 'row-avatar')}
+      <span class="member-row-copy">
+        <span class="name">${esc(m.name)}</span>
+        ${role(m) ? `<span class="badge role-badge">${esc(role(m))}</span>` : ''}
+      </span>
+    </button>
+    ${ig(m)}
+  </div>`;
+
+  const openMember = m => {
+    const dialog = $('#member-sheet');
+    const detail = dialog?.querySelector('.member-detail');
+    if (!dialog || !detail) return;
     const decoration = championDecorations(m);
-    return `<div class="row${decoration.champion}">
-      <div class="name">${decoration.title} ${m.role ? `<span class="badge role-badge">${esc(m.role)}</span>` : ''} <span class="badge">${esc(m.mbti || '—')}</span></div>
-      ${decoration.titles}
-      <div class="meta">${esc(m.hall || '')} · 🎂 ${esc(birthday(m.birthday))}${m.instagram ? ' · ' : ''}${ig(m)}</div>
-      ${n ? moreBtn(m, n, esc(n)) : ''}
-    </div>`;
-  };
-
-  // One delegated handler: the More button opens the dialog, anything else on a
-  // card flips it. Links keep their own behaviour.
-  const toggleCard = card => {
-    const open = card.classList.toggle('flipped');
-    card.setAttribute('aria-expanded', String(open));
+    const facts = [
+      ['居住地点', m.hall],
+      ['MBTI', m.mbti],
+      ['生日', birthday(m.birthday)]
+    ].filter(([, value]) => value !== undefined && value !== null && String(value).trim());
+    detail.innerHTML = `<div class="member-detail-head">
+        <div class="member-detail-photo">${avatar(m.name, m.photos || m.photo)}</div>
+        <div class="member-detail-title">
+          ${role(m) ? `<span class="member-role">${esc(role(m))}</span>` : ''}
+          <h2 id="member-detail-title">${esc(m.name)}</h2>
+          ${ig(m)}
+          ${decoration.titles}
+        </div>
+      </div>
+      ${facts.length ? `<dl class="member-facts">${facts.map(([label, value]) =>
+        `<div><dt>${label}</dt><dd>${esc(value)}</dd></div>`).join('')}</dl>` : ''}
+      ${note(m) ? `<section class="member-detail-note"><h3>成员笔记</h3><p>${esc(note(m))}</p></section>` : ''}`;
+    dialog.showModal();
   };
 
   box.onclick = e => {
-    const more = e.target.closest('.more-btn');
-    if (more) return openNote(more.dataset.name, more.dataset.note);
     if (e.target.closest('a')) return;
-    const card = e.target.closest('.flip');
-    if (card) toggleCard(card);
-  };
-  box.onkeydown = e => {
-    if (e.key !== 'Enter' && e.key !== ' ') return;
-    const c = e.target.closest('.flip');
-    if (c && c === e.target) { e.preventDefault(); toggleCard(c); }
+    const item = e.target.closest('[data-member]');
+    if (item) openMember(rows[Number(item.dataset.member)]);
   };
 
   const draw = v => {
     box.className = v === 'list' ? 'card list' : 'grid';
     box.innerHTML = rows.map(v === 'list' ? row : card).join('');
-    // The clamp is CSS, so only the browser knows whether it actually bit —
-    // ask it, and hide the "More" button on notes that already fit.
-    box.querySelectorAll('.face.back .note-text').forEach(p =>
-      p.nextElementSibling.hidden = p.scrollHeight <= p.clientHeight + 1);
     document.querySelectorAll('.viewswitch button').forEach(b =>
       b.setAttribute('aria-pressed', String(b.dataset.view === v)));
     store('og3:view', v);
@@ -262,12 +265,17 @@ async function board(tab, el) {
   el.innerHTML = '<div class="board-labels"><span>Rank</span><span>Name</span><span>Score</span></div><ol>' + rows.map((r, i) => {
     const pos = ranked ? (+r.rank || i + 1) : i + 1;
     const note = String(r.note ?? '').trim();
+    const detail = tab === 'pokemon'
+      ? `<button class="board-note detail-only" type="button" data-name="${esc(r.name)} · Pokémon GO${pos === 1 ? ' · Pokémon King' : ''}" data-note="${esc(note || '暂无其他详细资料。')}" aria-label="显示 ${esc(r.name)} 的详细资料"><b>显示详情</b></button>`
+      : note
+        ? `<button class="board-note" type="button" data-name="${esc(r.name)} · 最UPZ" data-note="${esc(note)}" aria-label="显示 ${esc(r.name)} 的详细资料"><span class="note-copy">${esc(note)}</span><b>显示详情</b></button>`
+        : '';
     return `<li class="${pos <= 3 ? 'top' : ''}${pos === 1 ? ` ${kingClass}` : ''}">
       <span class="rank">#${esc(pos)}</span>
       <span class="who">
-        <span class="leader-name">${pos === 1 && tab === 'upz' ? `<span aria-hidden="true">${icon}</span>` : ''}<span>${esc(r.name)}</span>${pos === 1 && tab === 'pokemon' ? `<span aria-hidden="true">${icon}</span>` : ''}</span>
-        ${pos === 1 ? `<span class="leader-title">${icon} ${kingTitle}</span>` : ''}
-        ${note ? `<button class="board-note" data-name="${esc(r.name)} · ${tab === 'pokemon' ? 'Pokémon GO' : '最UPZ'}" data-note="${esc(note)}" aria-label="View full note for ${esc(r.name)}"><span class="note-copy">${esc(note)}</span><b>… 查看详情</b></button>` : ''}
+        <span class="leader-name">${pos === 1 && tab === 'upz' ? `<span aria-hidden="true">${icon}</span>` : ''}<span>${esc(r.name)}</span></span>
+        ${pos === 1 && tab === 'upz' ? `<span class="leader-title">${icon} ${kingTitle}</span>` : ''}
+        ${detail}
       </span>
       <span class="score"><strong>${esc(points(r))}</strong><small>pts</small></span>
     </li>`;
@@ -438,6 +446,24 @@ function install() {
   btn.onclick = () => prompt ? prompt.prompt() : $('#install-sheet').showModal();
   $('#install-close')?.addEventListener('click', () => $('#install-sheet').close());
   $('#note-close')?.addEventListener('click', () => $('#note-sheet').close());
+  $('#member-close')?.addEventListener('click', () => $('#member-sheet').close());
+
+  // Native dialogs already close on Escape. This adds the familiar backdrop
+  // dismissal without treating clicks inside the floating board as dismissals.
+  [$('#member-sheet'), $('#note-sheet')].filter(Boolean).forEach(dialog => {
+    dialog.addEventListener('click', event => {
+      const box = dialog.getBoundingClientRect();
+      const outside = event.clientX < box.left || event.clientX > box.right
+        || event.clientY < box.top || event.clientY > box.bottom;
+      if (outside) dialog.close();
+    });
+    dialog.addEventListener('keydown', event => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        dialog.close();
+      }
+    });
+  });
 
   $('#share').onclick = async () => {
     const data = { title: 'OG3 Draco', url: location.origin + location.pathname };
