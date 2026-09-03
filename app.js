@@ -285,22 +285,42 @@ async function members() {
   const draw = v => {
     currentView = v;
     const records = rows
-      .map((member, index) => ({ member, index, role: role(member) || '其他' }))
+      .map((member, index) => ({
+        member,
+        index,
+        role: role(member) || '其他',
+        birthday: birthdayParts(member.birthday)
+      }))
       .sort((a, b) => compareMembers(a.member, b.member, currentSort));
-    const preferredRoles = ['OGL', 'SW', 'COM', 'FF', 'OGM'];
-    const foundRoles = [...new Set(records.map(record => record.role))];
-    const groupOrder = [
-      ...preferredRoles.filter(roleName => foundRoles.includes(roleName)),
-      ...foundRoles.filter(roleName => !preferredRoles.includes(roleName))
-    ];
+    const birthdayMode = currentSort === 'birthday';
+    const groupFor = record => birthdayMode ? (record.birthday?.month || 'unknown') : record.role;
+    const groupOrder = birthdayMode
+      ? [
+          ...Array.from({ length: 12 }, (_, index) => index + 1)
+            .filter(month => records.some(record => record.birthday?.month === month)),
+          ...(records.some(record => !record.birthday) ? ['unknown'] : [])
+        ]
+      : (() => {
+          const preferredRoles = ['OGL', 'SW', 'COM', 'FF', 'OGM'];
+          const foundRoles = [...new Set(records.map(record => record.role))];
+          return [
+            ...preferredRoles.filter(roleName => foundRoles.includes(roleName)),
+            ...foundRoles.filter(roleName => !preferredRoles.includes(roleName))
+          ];
+        })();
     const render = v === 'list' ? row : card;
 
-    box.className = `member-groups ${v}-mode`;
-    box.innerHTML = groupOrder.map(roleName => {
-      const items = records.filter(record => record.role === roleName);
-      const roleClass = String(roleName).toLowerCase().replace(/[^a-z0-9]+/g, '-');
-      return `<section class="member-group role-${roleClass}">
-        <h3 class="member-group-title"><span>${esc(roleName)}</span></h3>
+    box.className = `member-groups ${v}-mode ${birthdayMode ? 'birthday-sort' : 'name-sort'}`;
+    box.innerHTML = groupOrder.map(groupName => {
+      const items = records.filter(record => groupFor(record) === groupName);
+      const groupLabel = birthdayMode
+        ? (groupName === 'unknown' ? '生日未填写' : `${groupName}月`)
+        : groupName;
+      const groupClass = birthdayMode
+        ? (groupName === 'unknown' ? 'month-unknown' : `month-${groupName}`)
+        : `role-${String(groupName).toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
+      return `<section class="member-group ${groupClass}">
+        <h3 class="member-group-title"><span>${esc(groupLabel)}</span></h3>
         <div class="${v === 'list' ? 'card list member-group-list' : 'member-group-grid'}">
           ${items.map(record => render(record.member, record.index)).join('')}
         </div>
