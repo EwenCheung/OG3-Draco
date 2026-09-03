@@ -169,22 +169,23 @@ of serving people a stale version after a deploy.
 
 ## Design
 
-### Palette — jade, not "success green"
+### Palette — enchanted forest
 
-Deep jade primary against a warm cream background, with a soft gold accent reserved for
-top-three leaderboard marks. Jade suits a dragon mascot and a Chinese-English group
-without being on-the-nose; a bright generic green is what makes a site look templated.
-Cream instead of pure white keeps it from feeling clinical.
+Deep forest green, moss and warm firefly gold now sit against parchment-like surfaces.
+The palette takes its atmosphere from a friendly dragon in a softly lit forest while
+keeping the real member, score and attendance content easy to scan. Thick green outlines,
+short tactile shadows and rounded panels carry over the integrated frontend's playful
+card language without changing the app's compact structure.
 
 | token | light | dark |
 |---|---|---|
-| background | `#FAF8F3` | `#0C1310` |
-| surface | `#FFFFFF` | `#131C18` |
-| text | `#16221D` | `#E9EFEA` |
-| muted text | `#5F6E67` | `#93A39B` |
-| primary (jade) | `#0E6B4F` | `#3FBF8E` |
-| accent (gold) | `#C8992F` | `#E0B455` |
-| border | `#E2DDD1` | `#24322B` |
+| background | `#E8ECD5` | `#071A13` |
+| surface | `#FFFBEF` | `#102A20` |
+| text | `#173629` | `#F4F1D9` |
+| muted text | `#50695A` | `#AFC2B1` |
+| primary (moss) | `#256B49` | `#A5D77A` |
+| accent (gold) | `#D2A33B` | `#F0C65F` |
+| border | `#356348` | `#6F9A6A` |
 
 All defined as CSS custom properties on `:root`, swapped under
 `prefers-color-scheme: dark`.

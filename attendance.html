@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow">
-<meta name="theme-color" content="#0E6B4F">
+<meta name="theme-color" content="#153D2E">
 <title>出席 Attendance · OG3 Draco</title>
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="assets/brand/favicon.svg" type="image/svg+xml">
@@ -15,7 +15,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&amp;display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -24,8 +24,8 @@
   <img class="draco" src="assets/brand/dragon.svg" alt="" width="40" height="40">
   <h1 class="brand">OG3 <span>Draco</span></h1>
   <div class="top-actions">
-    <button class="icon-btn" id="install" hidden title="加到主页 Add to Home Screen">＋</button>
-    <button class="icon-btn" id="share" title="分享 Share">↗</button>
+    <button class="icon-btn" id="install" type="button" hidden title="加到主页 Add to Home Screen" aria-label="加到主页 Add to Home Screen">＋</button>
+    <button class="icon-btn" id="share" type="button" title="分享 Share" aria-label="分享 Share">↗</button>
   </div>
 </header>
 
@@ -40,7 +40,7 @@
   <p class="notice" id="notice">⚠️ 连不上 Google Sheet — showing the last saved copy.</p>
   <div class="page-head">
     <h2>出席 Attendance</h2><span class="sub">积分明细 · tap a name for score details</span>
-    <button class="icon-btn" id="toggle-matrix" style="margin-left:auto;width:auto;padding:0 14px;font-size:.85rem">看全表 Full grid</button>
+    <button class="icon-btn" id="toggle-matrix" type="button" style="margin-left:auto;width:auto;padding:0 14px;font-size:.85rem">看全表 Full grid</button>
   </div>
   <section class="card rules-card" id="attendance-rules">
     <h3>IMPORTANT NOTICE ‼️‼️</h3>
@@ -60,7 +60,7 @@
     <li>拣 <strong>Add to Home Screen 加到主畫面</strong></li>
   </ol>
   <p style="color:var(--muted);font-size:.88rem">之后就好似 app 咁 — full screen, no address bar.</p>
-  <button class="icon-btn" id="install-close" style="width:100%">好 OK</button>
+  <button class="icon-btn" id="install-close" type="button" style="width:100%">好 OK</button>
 </dialog>
 
 <script src="app.js"></script>

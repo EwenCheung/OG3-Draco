@@ -175,7 +175,7 @@ async function members() {
   const card = m => {
     const n = note(m);
     const decoration = championDecorations(m);
-    return `<div class="card m-card${n ? ' flip' : ''}${decoration.champion}"${n ? ` tabindex="0" role="button" aria-label="${esc(m.name)} — 笔记 notes"` : ''}>
+    return `<div class="card m-card${n ? ' flip' : ''}${decoration.champion}"${n ? ` tabindex="0" role="button" aria-expanded="false" aria-label="${esc(m.name)} — 笔记 notes"` : ''}>
       <div class="face front">
         ${avatar(m.name, m.photos || m.photo)}
         <div class="name">${decoration.title}${n ? '<span class="note-mark" aria-label="Has notes">📝</span>' : ''}</div>
@@ -207,16 +207,22 @@ async function members() {
 
   // One delegated handler: the More button opens the dialog, anything else on a
   // card flips it. Links keep their own behaviour.
+  const toggleCard = card => {
+    const open = card.classList.toggle('flipped');
+    card.setAttribute('aria-expanded', String(open));
+  };
+
   box.onclick = e => {
     const more = e.target.closest('.more-btn');
     if (more) return openNote(more.dataset.name, more.dataset.note);
     if (e.target.closest('a')) return;
-    e.target.closest('.flip')?.classList.toggle('flipped');
+    const card = e.target.closest('.flip');
+    if (card) toggleCard(card);
   };
   box.onkeydown = e => {
     if (e.key !== 'Enter' && e.key !== ' ') return;
     const c = e.target.closest('.flip');
-    if (c && c === e.target) { e.preventDefault(); c.classList.toggle('flipped'); }
+    if (c && c === e.target) { e.preventDefault(); toggleCard(c); }
   };
 
   const draw = v => {
@@ -389,7 +395,7 @@ async function photos() {
   if (!list.length) return fail(box, '还没有相片 — run tools/sync_photos.py --random 20');
 
   box.innerHTML = list.map((p, i) =>
-    `<button data-i="${i}"><img loading="lazy" alt="" width="${p.width}" height="${p.height}"
+    `<button type="button" data-i="${i}" aria-label="Open photo ${i + 1}"><img loading="lazy" alt="" width="${p.width}" height="${p.height}"
        src="photos/${esc(p.thumb)}"></button>`).join('');
 
   const dlg = $('#lightbox'), img = dlg.querySelector('img');
@@ -403,10 +409,19 @@ async function photos() {
   $('#prev').onclick = () => show(at - 1);
   $('#next').onclick = () => show(at + 1);
   $('#play').onclick = e => {
-    if (timer) { clearInterval(timer); timer = null; e.target.textContent = '▶'; }
-    else { timer = setInterval(() => show(at + 1), 2200); e.target.textContent = '⏸'; }
+    if (timer) {
+      clearInterval(timer); timer = null; e.target.textContent = '▶';
+      e.target.setAttribute('aria-label', 'Play slideshow');
+    }
+    else {
+      timer = setInterval(() => show(at + 1), 2200); e.target.textContent = '⏸';
+      e.target.setAttribute('aria-label', 'Pause slideshow');
+    }
   };
-  dlg.onclose = () => { clearInterval(timer); timer = null; $('#play').textContent = '▶'; };
+  dlg.onclose = () => {
+    clearInterval(timer); timer = null; $('#play').textContent = '▶';
+    $('#play').setAttribute('aria-label', 'Play slideshow');
+  };
 }
 
 // ── add to home screen / share ────────────────────────────────────────────
