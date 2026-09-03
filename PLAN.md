@@ -77,15 +77,14 @@ that spreadsheet.
 
 One flat list of everyone, two view modes toggled at the top:
 
-- **Grid** — photo cards with name, MBTI, birthday, hall, Instagram.
-- **List** — no photos, one compact row each, same fields. Faster to scan and to find
-  a specific name.
+- **Grid** — concise photo cards with name, role and Instagram.
+- **List** — compact photo rows with the same concise fields. Faster to scan and to
+  find a specific name.
 
-A member with something in the `notes` column gets a 📝 beside the name. Tapping the
-card flips it to the note; tapping again flips it back. The note is clamped to six
-lines so a long one can't stretch the whole grid row — when it doesn't fit, a
-**查看全部 More** button opens it in full in a dialog. List view shows the same note
-clamped to two lines, tapping it opens the same dialog.
+Tapping either presentation opens an accessible floating detail board. Hall, MBTI,
+birthday, notes and any leaderboard titles live there instead of crowding the card.
+The board closes through its button, the backdrop or Escape, and follows the same
+green forest styling on phone and desktop.
 
 Chosen view remembered in `localStorage`. Birthday renders as `12 Mar`. Instagram
 renders as `@handle` linking to `instagram.com/handle` in a new tab. A missing photo
@@ -98,9 +97,10 @@ around as they load.
 ## 2. Leaderboards — `leaderboard.html`
 
 Both boards show the spreadsheet's formula-provided rank, name and score. UPZ already
-contains only OGM members; Pokémon uses its own formula rank. Notes are clamped and open
-in a dialog. The UPZ winner gets fire/red treatment and the Pokémon winner gets a
-crown/gold treatment on both the leaderboard and Members page. A dual winner gets both.
+contains only OGM members; Pokémon uses its own formula rank. Pokémon rows keep detailed
+participant or contribution text out of the main ranking and reveal it through a
+**显示详情** dialog. The UPZ winner gets fire/red treatment and the Pokémon winner gets
+crown/gold treatment on the leaderboard; both titles remain visible in member details.
 
 The boards stack vertically on phone and sit side by side from iPad up.
 
@@ -156,9 +156,9 @@ icon and the name "OG3 Draco" — no browser chrome.
 
 Two buttons in the UI:
 
-- **Add to Home Screen** — on Android, captures `beforeinstallprompt` and fires the real
-  install dialog. On iPhone, Apple provides no such API, so it opens a short panel
-  showing the Share → Add to Home Screen steps. Hidden entirely once running in
+- **添加到主屏幕** — on Android, captures `beforeinstallprompt` and fires the real
+  install dialog. On iPhone, Apple provides no such API, so it opens a concise
+  Mandarin panel showing the Share → Add to Home Screen steps. Hidden once running in
   standalone mode, or where neither path applies.
 - **Share** — `navigator.share()`, the native share sheet, for firing the link into the
   group chat. Falls back to copy-to-clipboard on desktop.
@@ -169,22 +169,23 @@ of serving people a stale version after a deploy.
 
 ## Design
 
-### Palette — jade, not "success green"
+### Palette — enchanted forest
 
-Deep jade primary against a warm cream background, with a soft gold accent reserved for
-top-three leaderboard marks. Jade suits a dragon mascot and a Chinese-English group
-without being on-the-nose; a bright generic green is what makes a site look templated.
-Cream instead of pure white keeps it from feeling clinical.
+Deep forest green, moss and warm firefly gold now sit against parchment-like surfaces.
+The palette takes its atmosphere from a friendly dragon in a softly lit forest while
+keeping the real member, score and attendance content easy to scan. Thick green outlines,
+short tactile shadows and rounded panels carry over the integrated frontend's playful
+card language without changing the app's compact structure.
 
 | token | light | dark |
 |---|---|---|
-| background | `#FAF8F3` | `#0C1310` |
-| surface | `#FFFFFF` | `#131C18` |
-| text | `#16221D` | `#E9EFEA` |
-| muted text | `#5F6E67` | `#93A39B` |
-| primary (jade) | `#0E6B4F` | `#3FBF8E` |
-| accent (gold) | `#C8992F` | `#E0B455` |
-| border | `#E2DDD1` | `#24322B` |
+| background | `#E8ECD5` | `#071A13` |
+| surface | `#FFFBEF` | `#102A20` |
+| text | `#173629` | `#F4F1D9` |
+| muted text | `#50695A` | `#AFC2B1` |
+| primary (moss) | `#256B49` | `#A5D77A` |
+| accent (gold) | `#D2A33B` | `#F0C65F` |
+| border | `#356348` | `#6F9A6A` |
 
 All defined as CSS custom properties on `:root`, swapped under
 `prefers-color-scheme: dark`.
