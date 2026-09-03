@@ -71,6 +71,16 @@ const esc = s => String(s ?? '').replace(/[<>&"]/g, c => ({ '<': '&lt;', '>': '&
 const inits = n => String(n).trim().split(/\s+/).slice(0, 2).map(w => w[0] || '').join('').toUpperCase();
 const nameKey = n => String(n ?? '').trim().toLocaleLowerCase().replace(/\s+/g, ' ');
 const points = r => r.score ?? r.marks ?? r.points ?? r.total ?? '';
+const pinyinCollator = new Intl.Collator(['zh-Hans-u-co-pinyin', 'en'], {
+  sensitivity: 'base', numeric: true
+});
+
+// Existing English/pinyin names sort directly. If a Chinese display name is
+// added later, an optional Pinyin / SortName sheet column keeps the order
+// explicit without changing what visitors see on the card.
+const memberSortName = member => String(
+  member.sortname ?? member.sort_name ?? member.pinyin ?? member.name ?? ''
+).trim();
 
 // Prefer the sheet's explicit Rank column so ties remain exactly as the editor
 // intended. If a board has no Rank column, everyone tied at the highest score wins.
@@ -107,14 +117,48 @@ function avatar(name, photo, cls = '') {
     : fallback;
 }
 
-// Date cells come back as "Date(2003,2,12)" with a ZERO-indexed month — read it
-// naively and every birthday shifts back a month.
-function birthday(v) {
-  if (!v) return '';
-  const m = /^Date\((\d+),(\d+),(\d+)\)/.exec(String(v));
-  const d = m ? new Date(+m[1], +m[2], +m[3]) : new Date(v);
-  if (isNaN(d)) return String(v);
-  return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+// Date cells come back as "Date(2003,2,12)" with a ZERO-indexed month. Keep
+// month/day as plain numbers so sorting and the homepage banner share exactly
+// the same timezone-safe interpretation.
+function birthdayParts(value) {
+  if (!value) return null;
+  if (typeof value === 'object' && value.month && value.day) {
+    const month = Number(value.month), day = Number(value.day);
+    return month >= 1 && month <= 12 && day >= 1 && day <= 31 ? { month, day } : null;
+  }
+
+  const text = String(value).trim();
+  const googleDate = /^Date\((\d+),(\d+),(\d+)\)/.exec(text);
+  if (googleDate) return { month: Number(googleDate[2]) + 1, day: Number(googleDate[3]) };
+
+  const isoDate = /^(?:\d{4}-)?(\d{1,2})-(\d{1,2})(?:$|T)/.exec(text);
+  if (isoDate) return { month: Number(isoDate[1]), day: Number(isoDate[2]) };
+
+  const parsed = new Date(text);
+  return Number.isNaN(parsed.getTime())
+    ? null
+    : { month: parsed.getMonth() + 1, day: parsed.getDate() };
+}
+
+function birthday(value) {
+  const parts = birthdayParts(value);
+  if (!parts) return value ? String(value) : '';
+  return new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', timeZone: 'UTC' })
+    .format(new Date(Date.UTC(2000, parts.month - 1, parts.day)));
+}
+
+function compareMembers(a, b, mode = 'name') {
+  if (mode === 'birthday') {
+    const aBirthday = birthdayParts(a.birthday);
+    const bBirthday = birthdayParts(b.birthday);
+    if (aBirthday && bBirthday) {
+      const dateOrder = aBirthday.month - bBirthday.month || aBirthday.day - bBirthday.day;
+      if (dateOrder) return dateOrder;
+    } else if (aBirthday || bBirthday) {
+      return aBirthday ? -1 : 1;
+    }
+  }
+  return pinyinCollator.compare(memberSortName(a), memberSortName(b));
 }
 
 function openNote(name, text) {
@@ -235,22 +279,48 @@ async function members() {
     if (item) openMember(rows[Number(item.dataset.member)]);
   };
 
+  let currentView = store('og3:view') || 'grid';
+  let currentSort = store('og3:member-sort') || 'name';
+
   const draw = v => {
-    const records = rows.map((member, index) => ({ member, index, role: role(member) || '其他' }));
-    const preferredRoles = ['OGL', 'SW', 'COM', 'FF', 'OGM'];
-    const foundRoles = [...new Set(records.map(record => record.role))];
-    const groupOrder = [
-      ...preferredRoles.filter(roleName => foundRoles.includes(roleName)),
-      ...foundRoles.filter(roleName => !preferredRoles.includes(roleName))
-    ];
+    currentView = v;
+    const records = rows
+      .map((member, index) => ({
+        member,
+        index,
+        role: role(member) || '其他',
+        birthday: birthdayParts(member.birthday)
+      }))
+      .sort((a, b) => compareMembers(a.member, b.member, currentSort));
+    const birthdayMode = currentSort === 'birthday';
+    const groupFor = record => birthdayMode ? (record.birthday?.month || 'unknown') : record.role;
+    const groupOrder = birthdayMode
+      ? [
+          ...Array.from({ length: 12 }, (_, index) => index + 1)
+            .filter(month => records.some(record => record.birthday?.month === month)),
+          ...(records.some(record => !record.birthday) ? ['unknown'] : [])
+        ]
+      : (() => {
+          const preferredRoles = ['OGL', 'SW', 'COM', 'FF', 'OGM'];
+          const foundRoles = [...new Set(records.map(record => record.role))];
+          return [
+            ...preferredRoles.filter(roleName => foundRoles.includes(roleName)),
+            ...foundRoles.filter(roleName => !preferredRoles.includes(roleName))
+          ];
+        })();
     const render = v === 'list' ? row : card;
 
-    box.className = `member-groups ${v}-mode`;
-    box.innerHTML = groupOrder.map(roleName => {
-      const items = records.filter(record => record.role === roleName);
-      const roleClass = String(roleName).toLowerCase().replace(/[^a-z0-9]+/g, '-');
-      return `<section class="member-group role-${roleClass}">
-        <h3 class="member-group-title"><span>${esc(roleName)}</span></h3>
+    box.className = `member-groups ${v}-mode ${birthdayMode ? 'birthday-sort' : 'name-sort'}`;
+    box.innerHTML = groupOrder.map(groupName => {
+      const items = records.filter(record => groupFor(record) === groupName);
+      const groupLabel = birthdayMode
+        ? (groupName === 'unknown' ? '生日未填写' : `${groupName}月`)
+        : groupName;
+      const groupClass = birthdayMode
+        ? (groupName === 'unknown' ? 'month-unknown' : `month-${groupName}`)
+        : `role-${String(groupName).toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
+      return `<section class="member-group ${groupClass}">
+        <h3 class="member-group-title"><span>${esc(groupLabel)}</span></h3>
         <div class="${v === 'list' ? 'card list member-group-list' : 'member-group-grid'}">
           ${items.map(record => render(record.member, record.index)).join('')}
         </div>
@@ -258,12 +328,17 @@ async function members() {
     }).join('');
     document.querySelectorAll('.viewswitch button').forEach(b =>
       b.setAttribute('aria-pressed', String(b.dataset.view === v)));
+    document.querySelectorAll('.sortswitch button').forEach(b =>
+      b.setAttribute('aria-pressed', String(b.dataset.memberSort === currentSort)));
     store('og3:view', v);
+    store('og3:member-sort', currentSort);
   };
 
   document.querySelectorAll('.viewswitch button').forEach(b =>
     b.onclick = () => draw(b.dataset.view));
-  draw(store('og3:view') || 'grid');
+  document.querySelectorAll('.sortswitch button').forEach(b =>
+    b.onclick = () => { currentSort = b.dataset.memberSort; draw(currentView); });
+  draw(currentView);
 }
 
 // ── home memory ───────────────────────────────────────────────────────────
@@ -292,6 +367,45 @@ async function homePhoto() {
   } catch (error) {
     console.warn('[home-photo] random memory unavailable', error);
     frame.classList.add('photo-unavailable');
+  }
+}
+
+// The homepage and member directory both read the same live Members sheet.
+// Only month/day matters, so the banner continues to work when the sheet's
+// display year changes and disappears entirely when this month has no match.
+async function homeBirthdays(today = new Date()) {
+  const banner = $('#birthday-banner');
+  if (!banner) return;
+
+  try {
+    const result = await sheet('members');
+    const currentMonth = today.getMonth() + 1;
+    const people = result.rows
+      .map(member => ({ member, birthday: birthdayParts(member.birthday) }))
+      .filter(person => person.member.name && person.birthday?.month === currentMonth)
+      .sort((a, b) => a.birthday.day - b.birthday.day
+        || compareMembers(a.member, b.member, 'name'));
+
+    if (!people.length) {
+      banner.replaceChildren();
+      banner.hidden = true;
+      return;
+    }
+
+    banner.innerHTML = `<div class="birthday-banner-head">
+        <span aria-hidden="true">🎂</span>
+        <strong>本月寿星</strong>
+        <small>${currentMonth}月</small>
+      </div>
+      <div class="birthday-list">${people.map(({ member, birthday }) =>
+        `<div class="birthday-person">
+          ${avatar(member.name, member.photos || member.photo, 'birthday-avatar')}
+          <span><strong>${esc(member.name)}</strong><small>${birthday.month}月${birthday.day}日</small></span>
+        </div>`).join('')}</div>`;
+    banner.hidden = false;
+  } catch (error) {
+    console.warn('[home-birthdays] member data unavailable', error);
+    banner.hidden = true;
   }
 }
 
@@ -585,6 +699,7 @@ addEventListener('DOMContentLoaded', () => {
     a.getAttribute('href') === here && a.setAttribute('aria-current', 'page'));
   install();
   if ($('#home-photo')) homePhoto();
+  if ($('#birthday-banner')) homeBirthdays();
   if ($('#members')) members();
   if ($('#upz')) { board('upz', $('#upz')); board('pokemon', $('#pokemon')); }
   if ($('#attendance')) attendance();
