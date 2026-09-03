@@ -1,13 +1,13 @@
 {
   "name": "OG3 Draco",
   "short_name": "OG3 Draco",
-  "description": "OG3 Draco — 成员、排行榜、出席、相片",
+  "description": "OG3 Draco — 主页、成员、排行榜、出席与照片墙",
   "start_url": "index.html",
   "scope": ".",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#FAF8F3",
-  "theme_color": "#0E6B4F",
+  "background_color": "#082F2E",
+  "theme_color": "#0B3D3B",
   "icons": [
     { "src": "assets/brand/icon-192.png", "sizes": "192x192", "type": "image/png" },
     { "src": "assets/brand/icon-512.png", "sizes": "512x512", "type": "image/png" },

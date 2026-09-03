@@ -1,36 +1,39 @@
 <!doctype html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow">
-<meta name="theme-color" content="#0E6B4F">
+<meta name="theme-color" content="#0B3D3B">
 <title>排行榜 Leaderboard · OG3 Draco</title>
 <link rel="manifest" href="manifest.json">
-<link rel="icon" href="assets/brand/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="assets/brand/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="assets/brand/apple-touch-icon.png">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="OG3 Draco">
-<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&amp;display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 </head>
-<body>
+<body class="leaderboard-page">
 
 <header class="top">
-  <img class="draco" src="assets/brand/dragon.svg" alt="" width="40" height="40">
-  <h1 class="brand">OG3 <span>Draco</span></h1>
+  <a class="brand-home" href="index.html" aria-label="OG3 Draco 主页">
+    <img class="draco" src="assets/brand/icon-192.png" alt="" width="48" height="48">
+    <h1 class="brand">OG3 <span>Draco</span></h1>
+  </a>
   <div class="top-actions">
-    <button class="icon-btn" id="install" hidden title="加到主页 Add to Home Screen">＋</button>
-    <button class="icon-btn" id="share" title="分享 Share">↗</button>
+    <button class="icon-btn" id="install" type="button" hidden title="添加到主屏幕" aria-label="添加到主屏幕">＋</button>
+    <button class="icon-btn" id="share" type="button" title="分享 Share" aria-label="分享 Share">↗</button>
   </div>
 </header>
 
-<nav class="nav">
-    <a href="index.html"><span class="zh">成员</span><span class="en">Members</span></a>
+<nav class="nav" aria-label="主导航">
+    <a href="index.html"><span class="zh">主页</span><span class="en">Home</span></a>
+    <a href="members.html"><span class="zh">成员</span><span class="en">Members</span></a>
     <a href="leaderboard.html"><span class="zh">排行</span><span class="en">Leaderboard</span></a>
     <a href="attendance.html"><span class="zh">出席</span><span class="en">Attendance</span></a>
     <a href="photos.html"><span class="zh">相片</span><span class="en">Photos</span></a>
@@ -39,7 +42,11 @@
 <main>
   <p class="notice" id="notice">⚠️ 连不上 Google Sheet — showing the last saved copy.</p>
   <div class="page-head">
-    <h2>排行榜 Leaderboard</h2><span class="sub">谁最劲 · who's on top</span>
+    <div>
+      <p class="section-kicker">HALL OF STARS</p>
+      <h2>排行榜 Leaderboard</h2>
+      <span class="sub">谁最闪耀 · who's on top</span>
+    </div>
   </div>
   <div class="boards">
     <section class="card board"><h3>最UPZ OGM 🔥</h3><div id="upz"><div class="state">载入中 Loading…</div></div></section>
@@ -50,18 +57,18 @@
 <dialog id="note-sheet" class="note-sheet">
   <h2></h2>
   <p></p>
-  <button class="icon-btn" id="note-close">关 Close</button>
+  <button class="icon-btn" id="note-close" type="button">关闭</button>
 </dialog>
 
 <dialog id="install-sheet">
-  <h2 style="margin-top:0">加到主页 Add to Home Screen</h2>
-  <p>iPhone 没有一键安装 — Apple doesn't allow it, so two taps:</p>
-  <ol>
-    <li>撳 Safari 下面嘅 <strong>分享 Share</strong> 掣 ⬆️</li>
-    <li>拣 <strong>Add to Home Screen 加到主畫面</strong></li>
+  <h2>添加到主屏幕</h2>
+  <p class="install-intro">iPhone 安装方法：</p>
+  <ol class="install-steps">
+    <li>在 Safari 中点击底部的“分享”按钮。</li>
+    <li>选择“添加到主屏幕”。</li>
   </ol>
-  <p style="color:var(--muted);font-size:.88rem">之后就好似 app 咁 — full screen, no address bar.</p>
-  <button class="icon-btn" id="install-close" style="width:100%">好 OK</button>
+  <p class="install-note">完成后，即可从主屏幕直接打开。</p>
+  <button class="icon-btn" id="install-close" type="button">好的</button>
 </dialog>
 
 <script src="app.js"></script>
